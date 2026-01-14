@@ -1,3 +1,6 @@
 [submodule "origin_tlk_build"]
 	path = modules/origin_tlk_build
 	url = https://github.com/RuPutnik/origin_tlk_build.git
+[submodule "origin_lib_prot_msg"]
+	path = modules/origin_lib_prot_msg
+	url = https://github.com/RuPutnik/origin_lib_prot_msg.git
