@@ -29,9 +29,9 @@ include(LibsSettingsQt)
 link_qt_libraries(TARGET_NAME ${TARGET_NAME} QT_LIBS "Core" "Widgets")
 
 ## Подключить сторонние библиотеки
-#link_subdir_libraries(
-#    PUBLIC
-#    TARGET_NAME ${TARGET_NAME}
-#    MODULE_PATH ${__PATH_TO_MODULES__}/some_lib
-#    MODULE_TARGETS "SomeLib1" "SomeLib2"
-#)
+link_subdir_libraries(
+    PUBLIC
+    TARGET_NAME ${TARGET_NAME}
+    MODULE_PATH ${_PATH_TO_MODULES}/origin_lib_prot_msg
+    MODULE_TARGETS "Protocol"
+)

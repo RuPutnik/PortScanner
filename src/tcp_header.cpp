@@ -1,19 +1,18 @@
 #include "tcp_header.h"
 
+#include <QDebug>
+
 #include <netinet/in.h>
 #include <memory.h>
 #include <random>
 #include <chrono>
 
-#include <QDebug>
-
-
 TcpHeader::TcpHeader():
     srcPort{0}, dstPort{0},
-    ackNumber{0},
     seqNumber{0},
+    ackNumber{0},
     hdrLenAndFlags{htons(static_cast<uint16_t>((length() / sizeof(int32_t)) << 12))},
-    windowSize{0}, //TODO Убрать в константу htons(64240)
+    windowSize{0},//defaultWindowSize},
     chksum{0},
     urgent{0}
 {}
@@ -21,7 +20,32 @@ TcpHeader::TcpHeader():
 std::unique_ptr<const char[]> TcpHeader::data() const
 {
     char* rawDataHeader = new char[length()];
-    memcpy(rawDataHeader, this, length());
+
+    kivk_lib::Protocol tcpHeaderFormat{{
+        {"srcPort", 16}, {"dstPort", 16},
+        {"seqNumber", 32},
+        {"ackNumber", 32},
+        {"headerLength", 4}, {"reserver", 6}, {"urg", 1}, {"ack", 1}, {"psh", 1}, {"rst", 1}, {"syn", 1}, {"fin", 1}, {"windowSize", 16},
+        {"chksum", 16}, {"urgent", 16}
+    }};
+
+    tcpHeaderFormat.setFieldValue("srcPort", getSrcPort());
+    tcpHeaderFormat.setFieldValue("dstPort", getDstPort());
+    tcpHeaderFormat.setFieldValue("seqNumber", getSeqNumber());
+    tcpHeaderFormat.setFieldValue("ackNumber", getAckNumber());
+    tcpHeaderFormat.setFieldValue("headerLength", getHdrLen());
+    tcpHeaderFormat.setFieldValue("urg", isUrg());
+    tcpHeaderFormat.setFieldValue("ack", isAck());
+    tcpHeaderFormat.setFieldValue("psh", isPsh());
+    tcpHeaderFormat.setFieldValue("rst", isRst());
+    tcpHeaderFormat.setFieldValue("syn", isSyn());
+    tcpHeaderFormat.setFieldValue("fin", isFin());
+    tcpHeaderFormat.setFieldValue("windowSize", getWindowSize());
+    tcpHeaderFormat.setFieldValue("chksum", getChksum());
+    tcpHeaderFormat.setFieldValue("urgent", getUrgent());
+
+    memcpy(rawDataHeader, tcpHeaderFormat.getInternalBuffer(), length());
+
     //TODO Все таки похоже нужно заполнять данный массив не тупым копированием памяти данного объекта, т.к память под опции динамична...
    // setChksum(calcCheckSum());
     return std::unique_ptr<const char[]>{rawDataHeader};
@@ -29,7 +53,7 @@ std::unique_ptr<const char[]> TcpHeader::data() const
 
 uint16_t TcpHeader::length() const noexcept
 {
-    return sizeof(*this);
+    return 5 * sizeof(uint32_t); //TODO Также Учитывать опции
 }
 
 uint16_t TcpHeader::getSrcPort() const noexcept
@@ -191,16 +215,12 @@ uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp
 
     const int szPsdTcpHdr = sizeof(PseudoTcpHeader) / 2;
 
-    uint16_t buffDataPackets[szPsdTcpHdr + (lenTcp / 2)]; //Здесь будут храниться псевдозаголовок TCP и настоящий заголовок TCP, а так же по идее должны опции и данные
+    uint16_t buffDataPacket[szPsdTcpHdr + (lenTcp / 2)]; //Здесь будут храниться псевдозаголовок TCP и настоящий заголовок TCP, а так же по идее должны опции и данные
 
-    memcpy(buffDataPackets, &pseudoHeader, sizeof(PseudoTcpHeader));
+    memcpy(buffDataPacket, &pseudoHeader, sizeof(PseudoTcpHeader));
+    memcpy(static_cast<void*>(buffDataPacket) + sizeof(PseudoTcpHeader), this, lenTcp); //Преобразуем к void* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
 
-    std::swap(buffDataPackets[0], buffDataPackets[1]); //TODO Разобраться почему. М.б. нужно работать лучше с массивом char...
-    std::swap(buffDataPackets[2], buffDataPackets[3]);
-
-    memcpy(static_cast<void*>(buffDataPackets) + sizeof(PseudoTcpHeader), this, lenTcp); //Преобразуем к void* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
-
-    return calcCheckSum_(buffDataPackets, sizeof(buffDataPackets));
+    return calcCheckSum_(buffDataPacket, sizeof(buffDataPacket));
 }
 
 uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint16_t buffByteSize) const
@@ -211,7 +231,6 @@ uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint16_t buffByteSize) const
     int32_t sum = 0;
 
     while(buffByteSize > 1)  {
-        // This is the inner loop
         sum += *(buff++);
         buffByteSize -= 2;
     }
@@ -252,4 +271,3 @@ TcpHeader::PseudoTcpHeader::PseudoTcpHeader(uint32_t ipSource, uint32_t ipDestin
     srcIp{ipSource}, dstIp{ipDestination},
     protoId{htons(6)}, tcpByteLen{htons(tcpPacketLengthBytes)}
 {}
-//TODO Создать нормальный проект с сабмодулями и санитайзерами

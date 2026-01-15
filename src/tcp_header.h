@@ -3,6 +3,9 @@
 
 #include <stdint-gcc.h>
 #include <memory>
+#include <limits>
+
+#include <protocol.h>
 
 class TcpHeader final
 {
@@ -73,6 +76,8 @@ private:
         uint16_t tcpByteLen;
     };
 
+  //  const static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
+
     uint16_t srcPort;
     uint16_t dstPort;
     uint32_t seqNumber;
@@ -82,11 +87,12 @@ private:
     mutable uint16_t chksum;
     uint16_t urgent;
 
+
     //TODO Добавить поддержку опций (высокоуровневую)
 
     uint16_t hdrLenAndFlagsHE() const noexcept; //HE - Host Endian
     uint32_t generateRandomNumber() const;
     uint16_t calcCheckSum_(uint16_t *buff, uint16_t buffByteSize) const;
-} __attribute__((packed));
+} __attribute((packed));
 
 #endif // TCP_HEADER_H

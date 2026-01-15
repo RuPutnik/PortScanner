@@ -10,20 +10,17 @@
 
 constexpr const char* destIP = "127.0.0.1";
 
-int main(int argc, char *argv[])
+int main(int argc, char** argv)
 {
     //QCoreApplication a(argc, argv);
 
     const int fd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
-    //int fd = 1;
     if(fd < 0){
         perror("Error create raw socket");
         return errno;
     }
 
     qDebug() << "Создание Raw Socket успешно выполнено";
-
-    //char tcpPacket[sizeof(TcpHeader)]; // Наш TCP пакет будт состоять только из заголовка без опций и данных
 
     in_addr targetAddress;
     if(inet_pton(AF_INET, destIP, &targetAddress.s_addr) < 0){
@@ -41,7 +38,6 @@ int main(int argc, char *argv[])
     tcpHeader.setFlags(TcpHeader::PSH | TcpHeader::RST);
     tcpHeader.updateChkSum(targetAddress.s_addr, targetAddress.s_addr, tcpHeader.getHdrLen() * sizeof(uint32_t));
 
-    //memcpy(tcpPacket, &tcpHeader, sizeof(TcpHeader));
     tcpHeader.debugHex();
     tcpHeader.debugBin();
 
