@@ -36,7 +36,12 @@ int main(int argc, char** argv)
     tcpHeader.setSrcPort(33333);
     tcpHeader.setDstPort(44444);
     tcpHeader.setFlags(TcpHeader::PSH | TcpHeader::RST);
-    tcpHeader.debugHex();
+    tcpHeader.addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 4},
+                                                  {TcpHeader::OptionValue::UINT16, 34}});
+    tcpHeader.addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT32, 5000}});
+
+    qDebug().noquote() << tcpHeader.getOptionsAsText();
+    //tcpHeader.debugHex();
    // tcpHeader.debugBin();
 
     qDebug() << "URG" << tcpHeader.isUrg();
@@ -46,13 +51,13 @@ int main(int argc, char** argv)
     qDebug() << "SYN" << tcpHeader.isSyn();
     qDebug() << "FIN" << tcpHeader.isFin();
 
-    qDebug() << "Подготовка пакета завершена, выполняем отправку...";
+    qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";
     const auto headerData = tcpHeader.generateCompleteHeader(targetAddress.s_addr, targetAddress.s_addr, tcpHeader.getHdrLen() * sizeof(uint32_t));
 
     while(true) {
         sleep(1);
         // Наш TCP пакет пока что будет состоять только из заголовка без опций и данных
-        if (sendto(fd, headerData.get(), tcpHeader.length(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
+        if (sendto(fd, headerData.get(), tcpHeader.lengthBytes(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
             perror("packet send error:");
     }
 

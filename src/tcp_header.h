@@ -28,15 +28,31 @@ public:
         NOP = 1,
         MSS = 2,
         WindowScaling = 3,
-        SACK = 4,
+        SACK_Permitted = 4,
+        SACK = 5,
         Timestamps = 8,
         FastOpen = 34
     };
 
+    struct OptionValue
+    {
+        enum TypeValue{
+            UINT8 = 8,
+            UINT16 = 16,
+            UINT32 = 32,
+            UINT64 = 64
+        };
+
+        TypeValue type;
+        uint64_t value;
+    };
+
+    using OptionValues = std::vector<OptionValue>;
+
     TcpHeader();
 
-    std::unique_ptr<const char[]> generateCompleteHeader(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp);
-    uint16_t length() const noexcept;
+    std::unique_ptr<const char[]> generateCompleteHeader(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
+    uint16_t lengthBytes() const noexcept;
 
     uint16_t getSrcPort() const;
     void setSrcPort(uint16_t newSrcPort);
@@ -67,7 +83,7 @@ public:
     uint16_t getWindowSize() const;
     void setWindowSize(uint16_t newWindowSize);
 
-    uint16_t getChksum() const;
+    uint16_t getChksum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
 
     uint16_t getUrgent() const;
     void setUrgent(uint16_t newUrgent);
@@ -75,6 +91,13 @@ public:
     void debugHex() const;
     void debugBin() const;
     uint16_t calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
+
+    // Работа с опциями
+    bool addOption(Options option, const OptionValues& values = {});
+    bool setOptionValues(Options option, const OptionValues& values);
+    void resetOptions();
+    void resetOption(Options option);
+    std::string getOptionsAsText() const;
 
 private:
     struct PseudoTcpHeader final
@@ -89,6 +112,7 @@ private:
 
     using OptionData = std::pair<int, std::string>; //Размер, текстовое название
 
+
     kivk_lib::Protocol tcpHeaderFormat{{
         {"srcPort", 16}, {"dstPort", 16},
         {"seqNumber", 32},
@@ -97,13 +121,15 @@ private:
         {"chksum", 16}, {"urgent", 16}
     }};
 
-    const static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
-    const static std::unordered_map<Options, OptionData> optionsParams;
+    constexpr static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
+    const static std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> optionsParams;
+    std::unordered_map<TcpHeader::Options, OptionValues> headerOptions;
+    kivk_lib::Protocol generateOptionsPartHeader() const;
 
     //TODO Добавить поддержку опций (высокоуровневую)
 
     void setChksum(uint16_t newChksum);
-    void updateChkSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp);
+    void updateChkSum(kivk_lib::Protocol &prot, uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
     uint32_t generateRandomNumber() const;
     uint16_t calcCheckSum_(uint16_t *buff, uint16_t buffByteSize) const;
 };

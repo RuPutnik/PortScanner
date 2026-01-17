@@ -7,25 +7,39 @@
 #include <random>
 #include <chrono>
 
+const std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> TcpHeader::optionsParams
+{
+    {Options::EndOptions, {1, "End of Options List"}},
+    {Options::NOP, {1, "NOP"}},
+    {Options::MSS, {4, "Maximum Segment Size"}},
+    {Options::WindowScaling, {3, "Window Scaling"}},
+    {Options::SACK_Permitted, {2, "Selective ACK Permitted"}},
+    {Options::SACK, {-1, "Selective ACK"}},
+    {Options::Timestamps, {10, "Timestamps"}},
+    {Options::FastOpen, {18, "TCP Fast Open"}}
+};
+
 TcpHeader::TcpHeader()
 {
     setSeqNumber(generateRandomNumber());
     setWindowSize(defaultWindowSize);
-    setHdrLen(static_cast<uint8_t>(length() / sizeof(int32_t)));
+    setHdrLen(static_cast<uint8_t>(lengthBytes() / sizeof(int32_t)));
 }
 
-std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp)
-{    
-    char* const rawDataHeader = new char[length()];
+std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const
+{
+    kivk_lib::Protocol finalProtocol = tcpHeaderFormat + generateOptionsPartHeader();
 
-    updateChkSum(srcIp, dstIp, lenTcp);
+    char* const rawDataHeader = new char[finalProtocol.getLength()];
 
-    memcpy(rawDataHeader, tcpHeaderFormat.getInternalBuffer(), length());
+    updateChkSum(finalProtocol, srcIp, dstIp, lenTcp);
+
+    memcpy(rawDataHeader, finalProtocol.getInternalBuffer(), finalProtocol.getLength());
 
     return std::unique_ptr<const char[]>{rawDataHeader};
 }
 
-uint16_t TcpHeader::length() const noexcept
+uint16_t TcpHeader::lengthBytes() const noexcept
 {
     return static_cast<uint16_t>(tcpHeaderFormat.getLength());
 }
@@ -138,9 +152,18 @@ void TcpHeader::setWindowSize(uint16_t newWindowSize)
     tcpHeaderFormat.setFieldValue("windowSize", newWindowSize);
 }
 
-uint16_t TcpHeader::getChksum() const
+uint16_t TcpHeader::getChksum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const
 {
-    return tcpHeaderFormat.readFieldValue<uint16_t>("chksum");
+    //Если опций у заголовка нет, просто берем текущую контрольную сумму
+    if(headerOptions.empty()){
+        return tcpHeaderFormat.readFieldValue<uint16_t>("chksum");
+    }
+
+    //Если есть опции, создаем полный заголовок, считаем его контрольную сумму
+    kivk_lib::Protocol finalProtocol = tcpHeaderFormat + generateOptionsPartHeader();
+    updateChkSum(finalProtocol, srcIp, dstIp, lenTcp);
+
+    return finalProtocol.readFieldValue<uint16_t>("chksum");
 }
 
 void TcpHeader::setChksum(uint16_t newChksum)
@@ -160,7 +183,8 @@ void TcpHeader::setUrgent(uint16_t newUrgent)
 
 void TcpHeader::debugHex() const
 {
-    qDebug().noquote() << tcpHeaderFormat.getDataVisualization(1, 4);
+    const auto fullHeader = tcpHeaderFormat + generateOptionsPartHeader();
+    qDebug().noquote() << fullHeader.getDataVisualization(1, 4);
   /*  qDebug().noquote() << "-TCP--HDR-"; //TODO Доделать
     qDebug().noquote() << "0x" + QString::number(getSrcPort(), 16).rightJustified(4, '0') + QString::number(getDstPort(), 16).rightJustified(4, '0');
     qDebug().noquote() << "0x" + QString::number(getSeqNumber(), 16).rightJustified(8, '0');
@@ -172,7 +196,8 @@ void TcpHeader::debugHex() const
 
 void TcpHeader::debugBin() const
 {
-    //qDebug().noquote() << tcpHeaderFormat.getDataVisualization(1, 4, kivk_lib::Protocol::BASE::BIN);
+    const auto fullHeader = tcpHeaderFormat + generateOptionsPartHeader();
+    qDebug().noquote() << fullHeader.getDataVisualization(1, 4, kivk_lib::Protocol::BASE::BIN);
    /* qDebug().noquote() << "----------"; //TODO Доделать
     qDebug().noquote() << "0b" + QString::number(getSrcPort(), 2).rightJustified(16, '0') + QString::number(getDstPort(), 2).rightJustified(16, '0');
     qDebug().noquote() << "0b" + QString::number(getSeqNumber(), 2).rightJustified(32, '0');
@@ -197,6 +222,61 @@ uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp
     memcpy(static_cast<void*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader), tcpHeaderFormat.getInternalBuffer(), lenTcp);
 
     return htons(calcCheckSum_(buffDataPacket.get(), lenBuffDataPacket * 2));
+}
+
+bool TcpHeader::addOption(Options option, const OptionValues& values){
+    if(headerOptions.find(option) != std::end(headerOptions))
+        return false;
+
+
+    headerOptions[option] = values;
+    return true;
+}
+
+bool TcpHeader::setOptionValues(Options option, const OptionValues& values){
+    if(headerOptions.find(option) == std::end(headerOptions))
+        return false;
+
+    headerOptions[option] = values;
+    return true;
+}
+
+void TcpHeader::resetOptions()
+{
+    headerOptions.clear();
+}
+
+void TcpHeader::resetOption(Options option)
+{
+    headerOptions.erase(option);
+}
+
+std::string TcpHeader::getOptionsAsText() const
+{
+    std::string totalOptionsLine = "Options: (";
+
+    for(const auto& [option, values] : headerOptions)
+    {
+        const std::string optionName = optionsParams.at(option).second;
+
+        std::string optionValuesLine;
+        for(const auto& currOptionValue : values){
+            optionValuesLine += std::to_string(currOptionValue.value) + ", ";
+        }
+
+        optionValuesLine = optionValuesLine.substr(0, optionValuesLine.length() - 2);
+        totalOptionsLine += optionName + ": {" + optionValuesLine + "}" + ", ";
+    }
+
+    totalOptionsLine = totalOptionsLine.substr(0, totalOptionsLine.length() - 2);
+    totalOptionsLine += ")";
+
+    return totalOptionsLine;
+}
+
+kivk_lib::Protocol TcpHeader::generateOptionsPartHeader() const
+{
+    return {};//TODO Сгенерировать итоговый заголовок с учётом Опций
 }
 
 uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint16_t buffByteSize) const
@@ -224,9 +304,9 @@ uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint16_t buffByteSize) const
     return static_cast<uint16_t>(~sum);
 }
 
-void TcpHeader::updateChkSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp)
+void TcpHeader::updateChkSum(kivk_lib::Protocol& prot, uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const
 {
-    setChksum(calcCheckSum(srcIp, dstIp, lenTcp));
+    prot.setFieldValue("chksum", calcCheckSum(srcIp, dstIp, lenTcp));
 }
 
 uint32_t TcpHeader::generateRandomNumber() const
