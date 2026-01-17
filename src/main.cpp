@@ -36,10 +36,10 @@ int main(int argc, char** argv)
     tcpHeader.setSrcPort(33333);
     tcpHeader.setDstPort(44444);
     tcpHeader.setFlags(TcpHeader::PSH | TcpHeader::RST);
-    tcpHeader.updateChkSum(targetAddress.s_addr, targetAddress.s_addr, tcpHeader.getHdrLen() * sizeof(uint32_t));
-
+    tcpHeader.resetFlags();
     tcpHeader.debugHex();
-    tcpHeader.debugBin();
+    qDebug() << "Flags" << QString::number(tcpHeader.getFlags(), 2).rightJustified(6, '0');
+   // tcpHeader.debugBin();
 
     qDebug() << "URG" << tcpHeader.isUrg();
     qDebug() << "ACK" << tcpHeader.isAck();
@@ -49,11 +49,11 @@ int main(int argc, char** argv)
     qDebug() << "FIN" << tcpHeader.isFin();
 
     qDebug() << "Подготовка пакета завершена, выполняем отправку...";
-    const auto headerData = tcpHeader.data();
+    const auto headerData = tcpHeader.generateCompleteHeader(targetAddress.s_addr, targetAddress.s_addr, tcpHeader.getHdrLen() * sizeof(uint32_t));
 
     while(true) {
         sleep(1);
-        // Наш TCP пакет будт состоять только из заголовка без опций и данных
+        // Наш TCP пакет пока что будет состоять только из заголовка без опций и данных
         if (sendto(fd, headerData.get(), tcpHeader.length(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
             perror("packet send error:");
     }

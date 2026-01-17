@@ -7,206 +7,186 @@
 #include <random>
 #include <chrono>
 
-TcpHeader::TcpHeader():
-    srcPort{0}, dstPort{0},
+TcpHeader::TcpHeader()
+  /*  srcPort{0}, dstPort{0},
     seqNumber{0},
     ackNumber{0},
     hdrLenAndFlags{htons(static_cast<uint16_t>((length() / sizeof(int32_t)) << 12))},
     windowSize{0},//defaultWindowSize},
     chksum{0},
-    urgent{0}
-{}
-
-std::unique_ptr<const char[]> TcpHeader::data() const
+    urgent{0}*/
 {
-    char* rawDataHeader = new char[length()];
+    setSeqNumber(generateRandomNumber());
+    setWindowSize(defaultWindowSize);
+    setHdrLen(static_cast<uint8_t>(length() / sizeof(int32_t)));
+}
 
-    kivk_lib::Protocol tcpHeaderFormat{{
-        {"srcPort", 16}, {"dstPort", 16},
-        {"seqNumber", 32},
-        {"ackNumber", 32},
-        {"headerLength", 4}, {"reserver", 6}, {"urg", 1}, {"ack", 1}, {"psh", 1}, {"rst", 1}, {"syn", 1}, {"fin", 1}, {"windowSize", 16},
-        {"chksum", 16}, {"urgent", 16}
-    }};
+std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp)
+{    
+    char* const rawDataHeader = new char[length()];
 
-    tcpHeaderFormat.setFieldValue("srcPort", getSrcPort());
-    tcpHeaderFormat.setFieldValue("dstPort", getDstPort());
-    tcpHeaderFormat.setFieldValue("seqNumber", getSeqNumber());
-    tcpHeaderFormat.setFieldValue("ackNumber", getAckNumber());
-    tcpHeaderFormat.setFieldValue("headerLength", getHdrLen());
-    tcpHeaderFormat.setFieldValue("urg", isUrg());
-    tcpHeaderFormat.setFieldValue("ack", isAck());
-    tcpHeaderFormat.setFieldValue("psh", isPsh());
-    tcpHeaderFormat.setFieldValue("rst", isRst());
-    tcpHeaderFormat.setFieldValue("syn", isSyn());
-    tcpHeaderFormat.setFieldValue("fin", isFin());
-    tcpHeaderFormat.setFieldValue("windowSize", getWindowSize());
-    tcpHeaderFormat.setFieldValue("chksum", getChksum());
-    tcpHeaderFormat.setFieldValue("urgent", getUrgent());
+    updateChkSum(srcIp, dstIp, lenTcp);
 
     memcpy(rawDataHeader, tcpHeaderFormat.getInternalBuffer(), length());
 
-    //TODO Все таки похоже нужно заполнять данный массив не тупым копированием памяти данного объекта, т.к память под опции динамична...
-   // setChksum(calcCheckSum());
     return std::unique_ptr<const char[]>{rawDataHeader};
 }
 
 uint16_t TcpHeader::length() const noexcept
 {
-    return 5 * sizeof(uint32_t); //TODO Также Учитывать опции
+    return static_cast<uint16_t>(tcpHeaderFormat.getLength());
 }
 
-uint16_t TcpHeader::getSrcPort() const noexcept
+uint16_t TcpHeader::getSrcPort() const
 {
-    return ntohs(srcPort);
+    return tcpHeaderFormat.readFieldValue<uint16_t>("srcPort");
 }
 
-void TcpHeader::setSrcPort(uint16_t newSrcPort) noexcept
+void TcpHeader::setSrcPort(uint16_t newSrcPort)
 {
-    srcPort = htons(newSrcPort);
+    tcpHeaderFormat.setFieldValue("srcPort", newSrcPort);
 }
 
-uint16_t TcpHeader::getDstPort() const noexcept
+uint16_t TcpHeader::getDstPort() const
 {
-    return ntohs(dstPort);
+    return tcpHeaderFormat.readFieldValue<uint16_t>("dstPort");
 }
 
-void TcpHeader::setDstPort(uint16_t newDstPort) noexcept
+void TcpHeader::setDstPort(uint16_t newDstPort)
 {
-    dstPort = htons(newDstPort);
+    tcpHeaderFormat.setFieldValue("dstPort", newDstPort);
 }
 
-uint32_t TcpHeader::getSeqNumber() const noexcept
+uint32_t TcpHeader::getSeqNumber() const
 {
-    return ntohl(seqNumber);
+    return tcpHeaderFormat.readFieldValue<uint32_t>("seqNumber");
 }
 
-void TcpHeader::setSeqNumber(uint32_t newSeqNumber) noexcept
+void TcpHeader::setSeqNumber(uint32_t newSeqNumber)
 {
-    seqNumber = htonl(newSeqNumber);
+    tcpHeaderFormat.setFieldValue("seqNumber", newSeqNumber);
 }
 
-uint32_t TcpHeader::getAckNumber() const noexcept
+uint32_t TcpHeader::getAckNumber() const
 {
-    return ntohl(ackNumber);
+    return tcpHeaderFormat.readFieldValue<uint32_t>("ackNumber");
 }
 
-void TcpHeader::setAckNumber(uint32_t newAckNumber) noexcept
+void TcpHeader::setAckNumber(uint32_t newAckNumber)
 {
-    ackNumber = htonl(newAckNumber);
+    tcpHeaderFormat.setFieldValue("ackNumber", newAckNumber);
 }
 
-uint8_t TcpHeader::getHdrLen() const noexcept
+uint8_t TcpHeader::getHdrLen() const
 {
-    return (ntohs(hdrLenAndFlags) >> 12);
+    return tcpHeaderFormat.readFieldValue<uint8_t>("headerLength");
 }
 
-void TcpHeader::setHdrLen(uint8_t newHdrLen) noexcept
+void TcpHeader::setHdrLen(uint8_t newHdrLen)
 {
     if(newHdrLen > 0xF) //т.к. больше 4 бит по протоколу нельзя на размер использовать
         return;
 
-    const uint16_t hdrTmp = static_cast<uint16_t>(newHdrLen) << 12;
-    uint16_t hdrLenAndFlagsHostEndian = hdrLenAndFlagsHE();
-    hdrLenAndFlagsHostEndian = (hdrLenAndFlagsHostEndian & 0x00FF) | hdrTmp;
-    hdrLenAndFlags = htons(hdrLenAndFlagsHostEndian);
+    tcpHeaderFormat.setFieldValue("headerLength", newHdrLen);
 }
 
-bool TcpHeader::isUrg() const noexcept
+bool TcpHeader::isUrg() const
 {
-    return hdrLenAndFlagsHE() & 0x0020;
+    return tcpHeaderFormat.readFieldValue<bool>("urg");
 }
 
-bool TcpHeader::isAck() const noexcept
+bool TcpHeader::isAck() const
 {
-    return hdrLenAndFlagsHE() & 0x0010;
+    return tcpHeaderFormat.readFieldValue<bool>("ack");
 }
 
-bool TcpHeader::isPsh() const noexcept
+bool TcpHeader::isPsh() const
 {
-    return hdrLenAndFlagsHE() & 0x0008;
+    return tcpHeaderFormat.readFieldValue<bool>("psh");
 }
 
-bool TcpHeader::isRst() const noexcept
+bool TcpHeader::isRst() const
 {
-    return hdrLenAndFlagsHE() & 0x0004;
+    return tcpHeaderFormat.readFieldValue<bool>("rst");
 }
 
-bool TcpHeader::isSyn() const noexcept
+bool TcpHeader::isSyn() const
 {
-    return hdrLenAndFlagsHE() & 0x0002;
+    return tcpHeaderFormat.readFieldValue<bool>("syn");
 }
 
-bool TcpHeader::isFin() const noexcept
+bool TcpHeader::isFin() const
 {
-    return hdrLenAndFlagsHE() & 0x0001;
+    return tcpHeaderFormat.readFieldValue<bool>("fin");
 }
 
-uint8_t TcpHeader::getFlags() const noexcept
+uint8_t TcpHeader::getFlags() const
 {
-    return hdrLenAndFlagsHE() & 0x003F; // Получаем значения 6 младших бит
+    return tcpHeaderFormat.readGhostFieldValue<uint8_t>(106, 6); //Флаги начинаются со 106 бита
 }
 
-void TcpHeader::setFlags(uint8_t flags) noexcept
+void TcpHeader::setFlags(uint8_t flags)
 {
-    hdrLenAndFlags = htons((hdrLenAndFlagsHE() & 0xF000) | flags);
+    tcpHeaderFormat.setGhostFieldValue(106, 6, flags);
 }
 
-void TcpHeader::resetFlags() noexcept
+void TcpHeader::resetFlags()
 {
     setFlags(0);
 }
 
-uint16_t TcpHeader::getWindowSize() const noexcept
+uint16_t TcpHeader::getWindowSize() const
 {
-    return ntohs(windowSize);
+    return tcpHeaderFormat.readFieldValue<uint16_t>("windowSize");
 }
 
-void TcpHeader::setWindowSize(uint16_t newWindowSize) noexcept
+void TcpHeader::setWindowSize(uint16_t newWindowSize)
 {
-    windowSize = htons(newWindowSize);
+    tcpHeaderFormat.setFieldValue("windowSize", newWindowSize);
 }
 
-uint16_t TcpHeader::getChksum() const noexcept
+uint16_t TcpHeader::getChksum() const
 {
-    return ntohs(chksum);
+    return tcpHeaderFormat.readFieldValue<uint16_t>("chksum");
 }
 
-void TcpHeader::setChksum(uint16_t newChksum) noexcept
+void TcpHeader::setChksum(uint16_t newChksum)
 {
-    chksum = newChksum; //TODO Разобраться почему тут не нужно использовать htons
+    tcpHeaderFormat.setFieldValue("chksum", newChksum); //TODO Разобраться почему тут не нужно использовать htons
 }
 
-uint16_t TcpHeader::getUrgent() const noexcept
+uint16_t TcpHeader::getUrgent() const
 {
-    return ntohs(urgent);
+    return tcpHeaderFormat.readFieldValue<uint16_t>("urgent");
 }
 
-void TcpHeader::setUrgent(uint16_t newUrgent) noexcept
+void TcpHeader::setUrgent(uint16_t newUrgent)
 {
-    urgent = htons(newUrgent);
+    tcpHeaderFormat.setFieldValue("urgent", newUrgent);
 }
 
 void TcpHeader::debugHex() const
 {
-    qDebug().noquote() << "-TCP--HDR-"; //TODO Доделать
+    qDebug().noquote() << tcpHeaderFormat.getDataVisualization(1, 4);
+  /*  qDebug().noquote() << "-TCP--HDR-"; //TODO Доделать
     qDebug().noquote() << "0x" + QString::number(getSrcPort(), 16).rightJustified(4, '0') + QString::number(getDstPort(), 16).rightJustified(4, '0');
     qDebug().noquote() << "0x" + QString::number(getSeqNumber(), 16).rightJustified(8, '0');
     qDebug().noquote() << "0x" + QString::number(getAckNumber(), 16).rightJustified(8, '0');
     qDebug().noquote() << "0x" + QString::number(hdrLenAndFlagsHE(), 16).rightJustified(4, '0') + QString::number(getWindowSize(), 16).rightJustified(4, '0');
     qDebug().noquote() << "0x" + QString::number(getChksum(), 16).rightJustified(4, '0') + QString::number(getUrgent(), 16).rightJustified(4, '0');
-    qDebug().noquote() << "----------";
+    qDebug().noquote() << "----------";*/
 }
 
 void TcpHeader::debugBin() const
 {
-    qDebug().noquote() << "----------"; //TODO Доделать
+    //qDebug().noquote() << tcpHeaderFormat.getDataVisualization(1, 4, kivk_lib::Protocol::BASE::BIN);
+   /* qDebug().noquote() << "----------"; //TODO Доделать
     qDebug().noquote() << "0b" + QString::number(getSrcPort(), 2).rightJustified(16, '0') + QString::number(getDstPort(), 2).rightJustified(16, '0');
     qDebug().noquote() << "0b" + QString::number(getSeqNumber(), 2).rightJustified(32, '0');
     qDebug().noquote() << "0b" + QString::number(getAckNumber(), 2).rightJustified(32, '0');
     qDebug().noquote() << "0b" + QString::number(hdrLenAndFlagsHE(), 2).rightJustified(16, '0') + QString::number(getWindowSize(), 2).rightJustified(16, '0');
     qDebug().noquote() << "0b" + QString::number(getChksum(), 2).rightJustified(16, '0') + QString::number(getUrgent(), 2).rightJustified(16, '0');
-    qDebug().noquote() << "----------";
+    qDebug().noquote() << "----------";*/
 }
 
 uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const
@@ -214,13 +194,14 @@ uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp
     const PseudoTcpHeader pseudoHeader{srcIp, dstIp, lenTcp};
 
     const int szPsdTcpHdr = sizeof(PseudoTcpHeader) / 2;
+    const uint16_t lenBuffDataPacket = szPsdTcpHdr + (lenTcp / 2);
 
-    uint16_t buffDataPacket[szPsdTcpHdr + (lenTcp / 2)]; //Здесь будут храниться псевдозаголовок TCP и настоящий заголовок TCP, а так же по идее должны опции и данные
+    std::unique_ptr<uint16_t[]> buffDataPacket{new uint16_t[lenBuffDataPacket]}; //Здесь будут храниться псевдозаголовок TCP и настоящий заголовок TCP, а так же по идее должны опции и данные
 
-    memcpy(buffDataPacket, &pseudoHeader, sizeof(PseudoTcpHeader));
-    memcpy(static_cast<void*>(buffDataPacket) + sizeof(PseudoTcpHeader), this, lenTcp); //Преобразуем к void* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
+    memcpy(buffDataPacket.get(), &pseudoHeader, sizeof(PseudoTcpHeader));
+    memcpy(static_cast<void*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader), tcpHeaderFormat.getInternalBuffer(), lenTcp); //Преобразуем к void* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
 
-    return calcCheckSum_(buffDataPacket, sizeof(buffDataPacket));
+    return htons(calcCheckSum_(buffDataPacket.get(), lenBuffDataPacket * 2));
 }
 
 uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint16_t buffByteSize) const
@@ -251,11 +232,6 @@ uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint16_t buffByteSize) const
 void TcpHeader::updateChkSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp)
 {
     setChksum(calcCheckSum(srcIp, dstIp, lenTcp));
-}
-
-uint16_t TcpHeader::hdrLenAndFlagsHE() const noexcept
-{
-    return ntohs(hdrLenAndFlags);
 }
 
 uint32_t TcpHeader::generateRandomNumber() const

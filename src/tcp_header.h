@@ -22,48 +22,46 @@ public:
 
     TcpHeader();
 
-    std::unique_ptr<const char[]> data() const;
+    std::unique_ptr<const char[]> generateCompleteHeader(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp);
     uint16_t length() const noexcept;
 
-    uint16_t getSrcPort() const noexcept;
-    void setSrcPort(uint16_t newSrcPort) noexcept;
+    uint16_t getSrcPort() const;
+    void setSrcPort(uint16_t newSrcPort);
 
-    uint16_t getDstPort() const noexcept;
-    void setDstPort(uint16_t newDstPort) noexcept;
+    uint16_t getDstPort() const;
+    void setDstPort(uint16_t newDstPort);
 
-    uint32_t getSeqNumber() const noexcept;
-    void setSeqNumber(uint32_t newSeqNumber) noexcept;
+    uint32_t getSeqNumber() const;
+    void setSeqNumber(uint32_t newSeqNumber);
 
-    uint32_t getAckNumber() const noexcept;
-    void setAckNumber(uint32_t newAckNumber) noexcept;
+    uint32_t getAckNumber() const;
+    void setAckNumber(uint32_t newAckNumber);
 
-    uint8_t getHdrLen() const noexcept;
-    void setHdrLen(uint8_t newHdrLen) noexcept;
+    uint8_t getHdrLen() const;
+    void setHdrLen(uint8_t newHdrLen);
 
-    bool isUrg() const noexcept;
-    bool isAck() const noexcept;
-    bool isPsh() const noexcept;
-    bool isRst() const noexcept;
-    bool isSyn() const noexcept;
-    bool isFin() const noexcept;
+    bool isUrg() const;
+    bool isAck() const;
+    bool isPsh() const;
+    bool isRst() const;
+    bool isSyn() const;
+    bool isFin() const;
 
-    uint8_t getFlags() const noexcept;
-    void setFlags(uint8_t flags) noexcept;
-    void resetFlags() noexcept;
+    uint8_t getFlags() const;
+    void setFlags(uint8_t flags);
+    void resetFlags();
 
-    uint16_t getWindowSize() const noexcept;
-    void setWindowSize(uint16_t newWindowSize) noexcept;
+    uint16_t getWindowSize() const;
+    void setWindowSize(uint16_t newWindowSize);
 
-    uint16_t getChksum() const noexcept;
-    void setChksum(uint16_t newChksum) noexcept;
+    uint16_t getChksum() const;
 
-    uint16_t getUrgent() const noexcept;
-    void setUrgent(uint16_t newUrgent) noexcept;
+    uint16_t getUrgent() const;
+    void setUrgent(uint16_t newUrgent);
 
     void debugHex() const;
     void debugBin() const;
     uint16_t calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
-    void updateChkSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp);
 
 private:
     struct PseudoTcpHeader final
@@ -76,8 +74,16 @@ private:
         uint16_t tcpByteLen;
     };
 
-  //  const static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
+    kivk_lib::Protocol tcpHeaderFormat{{
+        {"srcPort", 16}, {"dstPort", 16},
+        {"seqNumber", 32},
+        {"ackNumber", 32},
+        {"headerLength", 4}, {"reserver", 6}, {"urg", 1}, {"ack", 1}, {"psh", 1}, {"rst", 1}, {"syn", 1}, {"fin", 1}, {"windowSize", 16},
+        {"chksum", 16}, {"urgent", 16}
+    }};
 
+    const static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
+/*
     uint16_t srcPort;
     uint16_t dstPort;
     uint32_t seqNumber;
@@ -86,13 +92,14 @@ private:
     uint16_t windowSize;
     mutable uint16_t chksum;
     uint16_t urgent;
-
+*/
 
     //TODO Добавить поддержку опций (высокоуровневую)
 
-    uint16_t hdrLenAndFlagsHE() const noexcept; //HE - Host Endian
+    void setChksum(uint16_t newChksum);
+    void updateChkSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp);
     uint32_t generateRandomNumber() const;
     uint16_t calcCheckSum_(uint16_t *buff, uint16_t buffByteSize) const;
-} __attribute((packed));
+};
 
 #endif // TCP_HEADER_H
