@@ -4,6 +4,8 @@
 #include <stdint-gcc.h>
 #include <memory>
 #include <limits>
+#include <unordered_map>
+#include <string>
 
 #include <protocol.h>
 
@@ -18,6 +20,17 @@ public:
         RST = 0b000100,
         SYN = 0b000010,
         FIN = 0b000001
+    };
+
+    enum class Options
+    {
+        EndOptions = 0,
+        NOP = 1,
+        MSS = 2,
+        WindowScaling = 3,
+        SACK = 4,
+        Timestamps = 8,
+        FastOpen = 34
     };
 
     TcpHeader();
@@ -74,6 +87,8 @@ private:
         uint16_t tcpByteLen;
     };
 
+    using OptionData = std::pair<int, std::string>; //Размер, текстовое название
+
     kivk_lib::Protocol tcpHeaderFormat{{
         {"srcPort", 16}, {"dstPort", 16},
         {"seqNumber", 32},
@@ -83,16 +98,7 @@ private:
     }};
 
     const static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
-/*
-    uint16_t srcPort;
-    uint16_t dstPort;
-    uint32_t seqNumber;
-    uint32_t ackNumber;
-    uint16_t hdrLenAndFlags; // hdrLen : 4 + reserved : 6 + urgBit + ackBit + pshBit + rstBit + synBit + finBit
-    uint16_t windowSize;
-    mutable uint16_t chksum;
-    uint16_t urgent;
-*/
+    const static std::unordered_map<Options, OptionData> optionsParams;
 
     //TODO Добавить поддержку опций (высокоуровневую)
 

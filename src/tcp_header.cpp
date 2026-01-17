@@ -8,13 +8,6 @@
 #include <chrono>
 
 TcpHeader::TcpHeader()
-  /*  srcPort{0}, dstPort{0},
-    seqNumber{0},
-    ackNumber{0},
-    hdrLenAndFlags{htons(static_cast<uint16_t>((length() / sizeof(int32_t)) << 12))},
-    windowSize{0},//defaultWindowSize},
-    chksum{0},
-    urgent{0}*/
 {
     setSeqNumber(generateRandomNumber());
     setWindowSize(defaultWindowSize);
@@ -193,13 +186,15 @@ uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp
 {
     const PseudoTcpHeader pseudoHeader{srcIp, dstIp, lenTcp};
 
-    const int szPsdTcpHdr = sizeof(PseudoTcpHeader) / 2;
-    const uint16_t lenBuffDataPacket = szPsdTcpHdr + (lenTcp / 2);
+    const int sizePseudoTcpHeader = sizeof(PseudoTcpHeader) / 2;
+    const uint16_t lenBuffDataPacket = sizePseudoTcpHeader + (lenTcp / 2);
 
-    std::unique_ptr<uint16_t[]> buffDataPacket{new uint16_t[lenBuffDataPacket]}; //Здесь будут храниться псевдозаголовок TCP и настоящий заголовок TCP, а так же по идее должны опции и данные
+    //Здесь будут храниться псевдозаголовок TCP и настоящий заголовок TCP, а так же по идее должны опции и данные
+    const std::unique_ptr<uint16_t[]> buffDataPacket{new uint16_t[lenBuffDataPacket]};
 
     memcpy(buffDataPacket.get(), &pseudoHeader, sizeof(PseudoTcpHeader));
-    memcpy(static_cast<void*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader), tcpHeaderFormat.getInternalBuffer(), lenTcp); //Преобразуем к void* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
+    //Преобразуем к void* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
+    memcpy(static_cast<void*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader), tcpHeaderFormat.getInternalBuffer(), lenTcp);
 
     return htons(calcCheckSum_(buffDataPacket.get(), lenBuffDataPacket * 2));
 }

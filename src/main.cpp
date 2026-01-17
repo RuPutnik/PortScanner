@@ -36,9 +36,7 @@ int main(int argc, char** argv)
     tcpHeader.setSrcPort(33333);
     tcpHeader.setDstPort(44444);
     tcpHeader.setFlags(TcpHeader::PSH | TcpHeader::RST);
-    tcpHeader.resetFlags();
     tcpHeader.debugHex();
-    qDebug() << "Flags" << QString::number(tcpHeader.getFlags(), 2).rightJustified(6, '0');
    // tcpHeader.debugBin();
 
     qDebug() << "URG" << tcpHeader.isUrg();
