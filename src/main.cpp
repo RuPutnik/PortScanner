@@ -25,24 +25,25 @@ int main(int argc, char** argv)
     in_addr targetAddress;
     if(inet_pton(AF_INET, destIP, &targetAddress.s_addr) < 0){
         perror("Error format IPv4 address");
-        return -1;
+        return errno;
     }
 
-    sockaddr_in destAddr{AF_INET, 0, targetAddress};
+    sockaddr_in destAddr{AF_INET, 0, targetAddress, 0};
 
     memset(destAddr.sin_zero, 0, sizeof(destAddr.sin_zero));
 
-    TcpHeader tcpHeader; //TODO Надо бы по хорошему тогда добавить и класс TcpPacket...
+    TcpHeader tcpHeader{targetAddress.s_addr, targetAddress.s_addr};
     tcpHeader.setSrcPort(33333);
     tcpHeader.setDstPort(44444);
     tcpHeader.setFlags(TcpHeader::PSH | TcpHeader::RST);
-    tcpHeader.addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 4},
-                                                  {TcpHeader::OptionValue::UINT16, 34}});
-    tcpHeader.addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT32, 5000}});
+    //tcpHeader.addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 4},
+    //                                              {TcpHeader::OptionValue::UINT16, 34}});
+
+    //tcpHeader.addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT32, 5000}});
 
     qDebug().noquote() << tcpHeader.getOptionsAsText();
-    //tcpHeader.debugHex();
-   // tcpHeader.debugBin();
+    tcpHeader.debugHex();
+    tcpHeader.debugBin();
 
     qDebug() << "URG" << tcpHeader.isUrg();
     qDebug() << "ACK" << tcpHeader.isAck();
@@ -52,11 +53,11 @@ int main(int argc, char** argv)
     qDebug() << "FIN" << tcpHeader.isFin();
 
     qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";
-    const auto headerData = tcpHeader.generateCompleteHeader(targetAddress.s_addr, targetAddress.s_addr, tcpHeader.getHdrLen() * sizeof(uint32_t));
+    const auto headerData = tcpHeader.generateCompleteHeader(0);
 
     while(true) {
         sleep(1);
-        // Наш TCP пакет пока что будет состоять только из заголовка без опций и данных
+        // Наш TCP пакет пока что будет состоять только из заголовка (возможно, с опциями), без данных
         if (sendto(fd, headerData.get(), tcpHeader.lengthBytes(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
             perror("packet send error:");
     }

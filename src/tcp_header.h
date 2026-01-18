@@ -1,7 +1,6 @@
 #ifndef TCP_HEADER_H
 #define TCP_HEADER_H
 
-#include <stdint-gcc.h>
 #include <memory>
 #include <limits>
 #include <unordered_map>
@@ -49,9 +48,9 @@ public:
 
     using OptionValues = std::vector<OptionValue>;
 
-    TcpHeader();
+    TcpHeader(uint32_t sourceIp, uint32_t destinationIp);
 
-    std::unique_ptr<const char[]> generateCompleteHeader(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
+    std::unique_ptr<const char[]> generateCompleteHeader(uint16_t lenTcpDataBytes) const;
     uint16_t lengthBytes() const noexcept;
 
     uint16_t getSrcPort() const;
@@ -83,13 +82,13 @@ public:
     uint16_t getWindowSize() const;
     void setWindowSize(uint16_t newWindowSize);
 
-    uint16_t getChksum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
+    uint16_t getChksum(uint16_t lenTcp) const;
 
     uint16_t getUrgent() const;
     void setUrgent(uint16_t newUrgent);
 
-    void debugHex() const;
-    void debugBin() const;
+    void debugHex(uint16_t lenTcpDataBytes = 0) const;
+    void debugBin(uint16_t lenTcpDataBytes = 0) const;
     uint16_t calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
 
     // Работа с опциями
@@ -112,7 +111,6 @@ private:
 
     using OptionData = std::pair<int, std::string>; //Размер, текстовое название
 
-
     kivk_lib::Protocol tcpHeaderFormat{{
         {"srcPort", 16}, {"dstPort", 16},
         {"seqNumber", 32},
@@ -123,13 +121,15 @@ private:
 
     constexpr static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
     const static std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> optionsParams;
+    uint32_t srcIp;
+    uint32_t dstIp;
     std::unordered_map<TcpHeader::Options, OptionValues> headerOptions;
     kivk_lib::Protocol generateOptionsPartHeader() const;
 
     //TODO Добавить поддержку опций (высокоуровневую)
 
     void setChksum(uint16_t newChksum);
-    void updateChkSum(kivk_lib::Protocol &prot, uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
+    void updateChkSum(kivk_lib::Protocol &prot, uint16_t lenTcp) const;
     uint32_t generateRandomNumber() const;
     uint16_t calcCheckSum_(uint16_t *buff, uint16_t buffByteSize) const;
 };
