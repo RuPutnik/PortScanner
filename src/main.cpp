@@ -38,10 +38,10 @@ int main(int argc, char** argv)
     tcpHeader.setSrcPort(33333);
     tcpHeader.setDstPort(44444);
     tcpHeader.setFlags(TcpHeader::PSH | TcpHeader::RST);
-    //tcpHeader.addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 4},
-    //                                              {TcpHeader::OptionValue::UINT16, 34}});
-
-    //tcpHeader.addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT32, 5000}});
+    tcpHeader.addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 1460}});
+    tcpHeader.addOption(TcpHeader::Options::SACK_Permitted);
+    tcpHeader.addOption(TcpHeader::Options::Timestamps, {{TcpHeader::OptionValue::UINT32, 1000000}, {TcpHeader::OptionValue::UINT32, 0}});
+    tcpHeader.addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT8, 7}});
 
     qDebug().noquote() << tcpHeader.getOptionsAsText();
     tcpHeader.debugHex();

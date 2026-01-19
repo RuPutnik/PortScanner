@@ -23,7 +23,7 @@ public:
         FIN = 0b000001
     };
 
-    enum class Options
+    enum class Options : uint8_t
     {
         EndOptions = 0,
         NOP = 1,
@@ -111,7 +111,17 @@ private:
         uint16_t tcpByteLen;
     };
 
-    using OptionData = std::pair<int, std::string>; //Размер, текстовое название
+    using OptionData = std::pair<uint32_t, std::string>; //Размер, текстовое название
+
+    template<class T>
+    constexpr uint64_t bitSize() const noexcept{ //TODO Защитить от переполнения
+        return __CHAR_BIT__ * sizeof(T);
+    }
+
+    template<class T>
+    constexpr T bitSize(T amountBytes) const noexcept{ //TODO Защитить от переполнения
+        return __CHAR_BIT__ * amountBytes;
+    }
 
     kivk_lib::Protocol tcpHeaderFormat{{
         {"srcPort", 16}, {"dstPort", 16},
@@ -134,6 +144,7 @@ private:
     void updateChkSum(kivk_lib::Protocol &prot, uint16_t lenTcp) const;
     uint32_t generateRandomNumber() const;
     uint16_t calcCheckSum_(uint16_t *buff, uint16_t buffByteSize) const;
+    bool containsOption(Options opt) const;
 };
 
 }
