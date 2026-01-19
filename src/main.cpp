@@ -6,7 +6,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "tcp_header.h"
+#include "packet/tcp_header.h"
+
+using namespace network;
 
 constexpr const char* destIP = "127.0.0.1";
 

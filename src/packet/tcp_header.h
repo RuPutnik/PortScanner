@@ -8,6 +8,8 @@
 
 #include <protocol.h>
 
+namespace network {
+
 class TcpHeader final
 {
 public:
@@ -133,5 +135,7 @@ private:
     uint32_t generateRandomNumber() const;
     uint16_t calcCheckSum_(uint16_t *buff, uint16_t buffByteSize) const;
 };
+
+}
 
 #endif // TCP_HEADER_H

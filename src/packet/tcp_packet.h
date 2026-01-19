@@ -4,6 +4,9 @@
 #include "tcp_header.h"
 
 //TODO Надо бы по хорошему тогда добавить и класс TcpPacket...
+
+namespace network {
+
 class TcpPacket
 {
 public:
@@ -11,8 +14,10 @@ public:
 
 private:
     TcpHeader header;
-    std::string data;
+    char* data;
 
 };
+
+}
 
 #endif // TCP_PACKET_H

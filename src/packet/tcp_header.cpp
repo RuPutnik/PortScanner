@@ -7,6 +7,8 @@
 #include <random>
 #include <chrono>
 
+namespace network {
+
 const std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> TcpHeader::optionsParams
 {
     {Options::EndOptions, {1, "End of Options List"}},
@@ -395,3 +397,5 @@ TcpHeader::PseudoTcpHeader::PseudoTcpHeader(uint32_t ipSource, uint32_t ipDestin
     srcIp{ipSource}, dstIp{ipDestination},
     protoId{htons(6)}, tcpByteLen{htons(tcpPacketLengthBytes)}
 {}
+
+}
