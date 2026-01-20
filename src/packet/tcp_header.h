@@ -96,8 +96,6 @@ public:
     // Работа с опциями
     bool addOption(Options option, const OptionValues& values = {});
     bool setOptionValues(Options option, const OptionValues& values);
-    void resetOptions();
-    void resetOption(Options option);
     std::string getOptionsAsText() const;
 
 private:
@@ -111,17 +109,24 @@ private:
         uint16_t tcpByteLen;
     };
 
-    using OptionData = std::pair<uint32_t, std::string>; //Размер, текстовое название
+    using OptionData = std::pair<int32_t, std::string>; //Размер в байтах, текстовое название
 
     template<class T>
-    constexpr uint64_t bitSize() const noexcept{ //TODO Защитить от переполнения
+    constexpr static inline uint64_t bitSize() noexcept{
+        static_assert(sizeof(T) <= std::numeric_limits<uint32_t>::max(), "Вычисляемое значение больше максимального значения uint32_t");
         return __CHAR_BIT__ * sizeof(T);
     }
 
-    template<class T>
-    constexpr T bitSize(T amountBytes) const noexcept{ //TODO Защитить от переполнения
+    constexpr static inline uint64_t bitSize(uint32_t amountBytes) noexcept{
         return __CHAR_BIT__ * amountBytes;
     }
+
+    const static inline uint32_t bitLenOptionId = static_cast<uint32_t>(bitSize<uint8_t>()); //Длина в битах поля с кодом опции
+    const static inline uint32_t bitLenOptionLen = static_cast<uint32_t>(bitSize<uint8_t>()); //Длина в битах поля с длиной опции
+    const static inline std::string optionIdProtFieldName = "_id"; //Постфиксы названий полей в протоколе опций
+    const static inline std::string optionLenProtFieldName = "_len";
+    const static inline std::string optionValProtFieldName = "_value_";
+    const static inline uint32_t maxTcpHeaderBytesLen = 60;
 
     kivk_lib::Protocol tcpHeaderFormat{{
         {"srcPort", 16}, {"dstPort", 16},

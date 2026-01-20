@@ -3,7 +3,7 @@
 #include <QDebug>
 
 #include <netinet/in.h>
-#include <memory.h>
+#include <memory>
 #include <random>
 #include <chrono>
 
@@ -199,7 +199,8 @@ void TcpHeader::debugHex(uint16_t lenTcpDataBytes) const
     qDebug().noquote() << "0x" + QString::number(getAckNumber(), 16).rightJustified(8, '0');
 
     qDebug().noquote() << "HDL FLAGS  WSIZE";
-    qDebug().noquote() << "0x" + QString::number(getHdrLen(), 16).rightJustified(1, '0') + " 0x" +QString::number(getFlags(), 16).rightJustified(3, '0') + " 0x" + QString::number(getWindowSize(), 16).rightJustified(4, '0');
+    qDebug().noquote() << "0x" + QString::number(getHdrLen(), 16).rightJustified(1, '0') + " 0x" +QString::number(getFlags(), 16).rightJustified(3, '0') + " 0x" +
+                                 QString::number(getWindowSize(), 16).rightJustified(4, '0');
 
     qDebug().noquote() << " CHKS    URG ";
     qDebug().noquote() << "0x" + QString::number(getChksum(lengthBytes() + lenTcpDataBytes), 16).rightJustified(4, '0') + " 0x" + QString::number(getUrgent(), 16).rightJustified(4, '0');
@@ -209,8 +210,8 @@ void TcpHeader::debugHex(uint16_t lenTcpDataBytes) const
 
         qDebug().noquote() << " OPTIONS";
 
-        for(int i = 0, end = 8 * optionsProtocol.getLength(); i < end; i+= (8 * sizeof(uint32_t))){
-            qDebug().noquote() << "0x" + QString::number(optionsProtocol.readGhostFieldValue<uint32_t>(i, 8 * sizeof(uint32_t)), 16).rightJustified(8, '0');
+        for(uint32_t i = 0, end = bitSize(optionsProtocol.getLength()); i < end; i+= bitSize<uint32_t>()){
+            qDebug().noquote() << "0x" + QString::number(optionsProtocol.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 16).rightJustified(8, '0');
         }
     }
 
@@ -231,7 +232,8 @@ void TcpHeader::debugBin(uint16_t lenTcpDataBytes) const
     qDebug().noquote() << "0b" + QString::number(getAckNumber(), 2).rightJustified(32, '0');
 
     qDebug().noquote() << "HD LEN RESERVED   UAPRSF     WINDOW SIZE";
-    qDebug().noquote() << "0b" + QString::number(getHdrLen(), 2).rightJustified(4, '0') + " 0b000000" + " 0b" +QString::number(getFlags(), 2).rightJustified(6, '0') + " 0b" +QString::number(getWindowSize(), 2).rightJustified(16, '0');
+    qDebug().noquote() << "0b" + QString::number(getHdrLen(), 2).rightJustified(4, '0') + " 0b000000" + " 0b" +QString::number(getFlags(), 2).rightJustified(6, '0') +
+                         " 0b" + QString::number(getWindowSize(), 2).rightJustified(16, '0');
 
     qDebug().noquote() << "     CHECK SUMM           URGENT ";
     qDebug().noquote() << "0b" + QString::number(getChksum(lengthBytes() + lenTcpDataBytes), 2).rightJustified(16, '0') + " 0b" + QString::number(getUrgent(), 2).rightJustified(16, '0');
@@ -240,9 +242,9 @@ void TcpHeader::debugBin(uint16_t lenTcpDataBytes) const
         const auto optionsProtocol = generateOptionsPartHeader();
 
         qDebug().noquote() << "             OPTIONS";
-//TODO Везде использовать bitSize
-        for(int i = 0, end = 8 * optionsProtocol.getLength(); i < end; i+= bitSize<uint32_t>()){
-            qDebug().noquote() << "0b" + QString::number(optionsProtocol.readGhostFieldValue<uint32_t>(i, 8 * sizeof(uint32_t)), 2).rightJustified(32, '0');
+
+        for(uint32_t i = 0, end = bitSize(optionsProtocol.getLength()); i < end; i+= bitSize<uint32_t>()){
+            qDebug().noquote() << "0b" + QString::number(optionsProtocol.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 2).rightJustified(bitSize<uint32_t>(), '0');
         }
     }
 
@@ -253,21 +255,23 @@ uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp
 {
     const PseudoTcpHeader pseudoHeader{srcIp, dstIp, lenTcp};
 
-    const int sizePseudoTcpHeader = sizeof(PseudoTcpHeader) / 2;
-    const uint16_t lenBuffDataPacket = sizePseudoTcpHeader + (lenTcp / 2);
+    const uint16_t lenBytesBuffDataPacket = sizeof(PseudoTcpHeader) + lenTcp;
 
     //Здесь будут храниться псевдозаголовок TCP и настоящий заголовок TCP, а так же по идее должны опции и данные
-    const std::unique_ptr<uint16_t[]> buffDataPacket{new uint16_t[lenBuffDataPacket]};
+    const std::unique_ptr<uint16_t[]> buffDataPacket{new uint16_t[lenBytesBuffDataPacket / 2]};
 
     memcpy(buffDataPacket.get(), &pseudoHeader, sizeof(PseudoTcpHeader));
     //Преобразуем к void* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
     memcpy(static_cast<void*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader), tcpHeaderFormat.getInternalBuffer(), lenTcp);
 
-    return htons(calcCheckSum_(buffDataPacket.get(), lenBuffDataPacket * 2));
+    return htons(calcCheckSum_(buffDataPacket.get(), lenBytesBuffDataPacket));
 }
 
 bool TcpHeader::addOption(Options option, const OptionValues& values){
-    //TODO Добавить защиту от добавления NOP и EndOptions
+    if(option == Options::NOP || option == Options::EndOptions){
+        qDebug() << "Опции NOP и EndOptions являются служебными и запрещены к явному добавлению";
+        return false;
+    }
 
     if(headerOptions.find(option) != std::end(headerOptions))
         return false;
@@ -278,21 +282,16 @@ bool TcpHeader::addOption(Options option, const OptionValues& values){
 }
 
 bool TcpHeader::setOptionValues(Options option, const OptionValues& values){
+    if(option == Options::NOP || option == Options::EndOptions){
+        qDebug() << "Опции NOP и EndOptions являются служебными и запрещены к явному использованию";
+        return false;
+    }
+
     if(headerOptions.find(option) == std::end(headerOptions))
         return false;
 
     headerOptions[option] = values;
     return true;
-}
-
-void TcpHeader::resetOptions()
-{
-    headerOptions.clear();
-}
-
-void TcpHeader::resetOption(Options option)
-{
-    headerOptions.erase(option);
 }
 
 std::string TcpHeader::getOptionsAsText() const
@@ -322,26 +321,33 @@ std::string TcpHeader::getOptionsAsText() const
 
 kivk_lib::Protocol TcpHeader::generateOptionsPartHeader() const
 {
+    //TODO Убрать это в addOption, избавиться от двухэтапного построения заголовка
     kivk_lib::Protocol optionsPartHeader;
 
     const uint8_t nopCode = static_cast<uint8_t>(Options::NOP);
-    const uint32_t nopLength = bitSize(optionsParams.at(Options::NOP).first);
+    const uint32_t nopLength = static_cast<uint32_t>(bitSize(optionsParams.at(Options::NOP).first));
 
     for(const auto& [option, values] : headerOptions)
     {
-        const auto& [byteLength, name] = optionsParams.at(option);
+        auto [byteLength, name] = optionsParams.at(option);
 
-        optionsPartHeader.appendField({name + "_id", 8}); //TODO Все явные значения спрятать в константы
-        optionsPartHeader.appendField({name + "_len", 8});
+        if(option == Options::SACK){ //Для опции SACK считаем её размер исходя из количества блоков - значений, каждое по 8 байт
+            byteLength = std::accumulate(std::begin(values), std::end(values), 2, [](const auto accum, const auto& currValue){
+                return accum + currValue.type;
+            });
+        }
 
-        optionsPartHeader.setFieldValue(name + "_id", static_cast<uint8_t>(option));
-        optionsPartHeader.setFieldValue(name + "_len", byteLength);
+        optionsPartHeader.appendField({name + optionIdProtFieldName, bitLenOptionId});
+        optionsPartHeader.appendField({name + optionLenProtFieldName, bitLenOptionLen});
+
+        optionsPartHeader.setFieldValue(name + optionIdProtFieldName, static_cast<uint8_t>(option));
+        optionsPartHeader.setFieldValue(name + optionLenProtFieldName, byteLength);
 
         //Создаем и заполняем поля значений опций
         for(int i = 0; i < values.size(); i++){
             const auto& [lenValueBits, value] = values.at(i);
-            optionsPartHeader.appendField({name + "_value_" + std::to_string(i), lenValueBits});
-            optionsPartHeader.setFieldValue(name + "_value_" + std::to_string(i), value);
+            optionsPartHeader.appendField({name + optionValProtFieldName + std::to_string(i), lenValueBits});
+            optionsPartHeader.setFieldValue(name + optionValProtFieldName + std::to_string(i), value);
         }
 
         //Проставляем NOP-ы
@@ -361,7 +367,11 @@ kivk_lib::Protocol TcpHeader::generateOptionsPartHeader() const
             optionsPartHeader.setFieldValue("nop_2_" + name, nopCode);
             break;
         case Options::SACK:
-            //TODO
+            optionsPartHeader.appendField({"nop_1_" + name, nopLength});
+            optionsPartHeader.setFieldValue("nop_1_" + name, nopCode);
+
+            optionsPartHeader.appendField({"nop_2_" + name, nopLength});
+            optionsPartHeader.setFieldValue("nop_2_" + name, nopCode);
             continue;
         case Options::Timestamps:
             optionsPartHeader.appendField({"nop_1_" + name, nopLength});
@@ -383,9 +393,10 @@ kivk_lib::Protocol TcpHeader::generateOptionsPartHeader() const
         }
     }
     //TODO Добавить выравнивание Padding до 4 байт
-    //TODO Учитывать максимальный размер заголовка, сделать константу на эту тему
+    //TODO Учитывать максимальный размер заголовка
+    //TODO Сгенерировать итоговый заголовок с учётом Опций
 
-    return optionsPartHeader;//TODO Сгенерировать итоговый заголовок с учётом Опций
+    return optionsPartHeader;
 }
 
 uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint16_t buffByteSize) const
@@ -425,9 +436,9 @@ void TcpHeader::updateChkSum(kivk_lib::Protocol& prot, uint16_t lenTcp) const
 
 uint32_t TcpHeader::generateRandomNumber() const
 {
-    const auto time_since_epoch = std::chrono::high_resolution_clock::now().time_since_epoch();
+    const auto time_since_epoch = std::chrono::steady_clock::now().time_since_epoch();
     std::mt19937 engine;
-    engine.seed(time_since_epoch.count());
+    engine.seed(static_cast<uint32_t>(time_since_epoch.count()));
     std::uniform_int_distribution<uint32_t> dist{1};
     return dist(engine);
 }
