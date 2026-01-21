@@ -10,6 +10,9 @@ class IcmpPacket final : public IPacket
 {
 public:
     IcmpPacket();
+
+    uint32_t getBytesLength() override;
+    std::unique_ptr<const char[]> getData() override;
 };
 
 }

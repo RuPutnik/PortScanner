@@ -5,4 +5,15 @@ namespace network {
 {
 
 }*/
+
+uint32_t TcpPacket::getBytesLength()
+{
+
+}
+
+std::unique_ptr<const char[]> TcpPacket::getData()
+{
+
+}
+
 }

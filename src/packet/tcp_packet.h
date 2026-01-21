@@ -13,6 +13,9 @@ class TcpPacket final : public IPacket
 public:
    // TcpPacket();
 
+    uint32_t getBytesLength() override;
+    std::unique_ptr<const char[]> getData() override;
+
 private:
     TcpHeader header;
     char* data;

@@ -392,8 +392,14 @@ kivk_lib::Protocol TcpHeader::generateOptionsPartHeader() const
             break;
         }
     }
-    //TODO Добавить выравнивание Padding до 4 байт
-    //TODO Учитывать максимальный размер заголовка
+
+    if((lengthBytes() + optionsPartHeader.getLength()) < maxTcpHeaderBytesLen)
+    {
+        //Если в заголовке еще есть место, добавляем Padding
+        optionsPartHeader.appendField({optionsParams.at(Options::EndOptions).second, bitSize<uint32_t>()});
+        optionsPartHeader.setFieldValue(optionsParams.at(Options::EndOptions).second, static_cast<uint8_t>(Options::EndOptions));
+    }
+
     //TODO Сгенерировать итоговый заголовок с учётом Опций
 
     return optionsPartHeader;

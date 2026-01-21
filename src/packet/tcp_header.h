@@ -8,6 +8,8 @@
 
 #include <protocol.h>
 
+#include "../tools.h"
+
 namespace network {
 
 class TcpHeader final
@@ -110,16 +112,6 @@ private:
     };
 
     using OptionData = std::pair<int32_t, std::string>; //Размер в байтах, текстовое название
-
-    template<class T>
-    constexpr static inline uint64_t bitSize() noexcept{
-        static_assert(sizeof(T) <= std::numeric_limits<uint32_t>::max(), "Вычисляемое значение больше максимального значения uint32_t");
-        return __CHAR_BIT__ * sizeof(T);
-    }
-
-    constexpr static inline uint64_t bitSize(uint32_t amountBytes) noexcept{
-        return __CHAR_BIT__ * amountBytes;
-    }
 
     const static inline uint32_t bitLenOptionId = static_cast<uint32_t>(bitSize<uint8_t>()); //Длина в битах поля с кодом опции
     const static inline uint32_t bitLenOptionLen = static_cast<uint32_t>(bitSize<uint8_t>()); //Длина в битах поля с длиной опции
