@@ -54,7 +54,7 @@ public:
 
     TcpHeader(uint32_t sourceIp, uint32_t destinationIp);
 
-    std::unique_ptr<const char[]> generateCompleteHeader(uint16_t lenTcpDataBytes) const;
+    std::unique_ptr<const char[]> generateCompleteHeader(uint16_t lenTcpDataBytes);
     uint16_t lengthBytes() const noexcept;
 
     uint16_t getSrcPort() const;
@@ -86,7 +86,7 @@ public:
     uint16_t getWindowSize() const;
     void setWindowSize(uint16_t newWindowSize);
 
-    uint16_t getChksum(uint16_t lenTcp) const;
+    uint16_t getChksum() const;
 
     uint16_t getUrgent() const;
     void setUrgent(uint16_t newUrgent);
@@ -96,7 +96,7 @@ public:
     uint16_t calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
 
     // Работа с опциями
-    bool addOption(Options option, const OptionValues& values = {});
+    bool addOption(Options option, const OptionValues& values = {}, bool lastOption = false);
     bool setOptionValues(Options option, const OptionValues& values);
     std::string getOptionsAsText() const;
 
@@ -119,6 +119,8 @@ private:
     const static inline std::string optionLenProtFieldName = "_len";
     const static inline std::string optionValProtFieldName = "_value_";
     const static inline uint32_t maxTcpHeaderBytesLen = 60;
+    constexpr static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
+    const static std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> optionsParams;
 
     kivk_lib::Protocol tcpHeaderFormat{{
         {"srcPort", 16}, {"dstPort", 16},
@@ -128,17 +130,13 @@ private:
         {"chksum", 16}, {"urgent", 16}
     }};
 
-    constexpr static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
-    const static std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> optionsParams;
     uint32_t srcIp;
     uint32_t dstIp;
     std::unordered_map<TcpHeader::Options, OptionValues> headerOptions;
-    kivk_lib::Protocol generateOptionsPartHeader() const;
-
-    //TODO Добавить поддержку опций (высокоуровневую)
+    bool optionsFilled;
 
     void setChksum(uint16_t newChksum);
-    void updateChkSum(kivk_lib::Protocol &prot, uint16_t lenTcp) const;
+    void updateChkSum(uint16_t lenTcp);
     uint32_t generateRandomNumber() const;
     uint16_t calcCheckSum_(uint16_t *buff, uint16_t buffByteSize) const;
     bool containsOption(Options opt) const;

@@ -37,7 +37,7 @@ int main(int argc, char** argv)
     TcpHeader tcpHeader{targetAddress.s_addr, targetAddress.s_addr};
     tcpHeader.setSrcPort(33333);
     tcpHeader.setDstPort(44444);
-    tcpHeader.setFlags(TcpHeader::PSH | TcpHeader::RST);
+    tcpHeader.setFlags(TcpHeader::SYN);
     tcpHeader.addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 1460}});
     tcpHeader.addOption(TcpHeader::Options::SACK_Permitted);
     tcpHeader.addOption(TcpHeader::Options::Timestamps, {{TcpHeader::OptionValue::UINT32, 1000000}, {TcpHeader::OptionValue::UINT32, 0}});

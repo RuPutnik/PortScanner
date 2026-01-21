@@ -23,22 +23,21 @@ const std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> TcpHeader::o
 
 TcpHeader::TcpHeader(uint32_t sourceIp, uint32_t destinationIp):
     srcIp{sourceIp},
-    dstIp{destinationIp}
+    dstIp{destinationIp},
+    optionsFilled{false}
 {
     setSeqNumber(generateRandomNumber());
     setWindowSize(defaultWindowSize);
-    setHdrLen(static_cast<uint8_t>(lengthBytes() / sizeof(int32_t)));
 }
 
-std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(uint16_t lenTcpDataBytes) const
+std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(uint16_t lenTcpDataBytes)
 {
-    kivk_lib::Protocol finalProtocol = tcpHeaderFormat + generateOptionsPartHeader();
+    //TODO Учитывать данные пакета при расчете КС
+    updateChkSum(lengthBytes());
 
-    char* const rawDataHeader = new char[finalProtocol.getLength()];
+    char* const rawDataHeader = new char[lengthBytes()];
 
-    updateChkSum(finalProtocol, lengthBytes() + lenTcpDataBytes);
-
-    memcpy(rawDataHeader, finalProtocol.getInternalBuffer(), finalProtocol.getLength());
+    memcpy(rawDataHeader, tcpHeaderFormat.getInternalBuffer(), lengthBytes());
 
     return std::unique_ptr<const char[]>{rawDataHeader};
 }
@@ -156,19 +155,9 @@ void TcpHeader::setWindowSize(uint16_t newWindowSize)
     tcpHeaderFormat.setFieldValue("windowSize", newWindowSize);
 }
 
-uint16_t TcpHeader::getChksum(uint16_t lenTcp) const
+uint16_t TcpHeader::getChksum() const
 {
-    kivk_lib::Protocol finalProtocol = tcpHeaderFormat;
-
-    if(!headerOptions.empty()){
-        //Если есть опции, создаем полный заголовок
-        finalProtocol = finalProtocol + generateOptionsPartHeader();
-    }
-
-    //считаем его контрольную сумму
-    updateChkSum(finalProtocol, lenTcp);
-
-    return finalProtocol.readFieldValue<uint16_t>("chksum");
+    return tcpHeaderFormat.readFieldValue<uint16_t>("chksum");
 }
 
 void TcpHeader::setChksum(uint16_t newChksum)
@@ -203,15 +192,15 @@ void TcpHeader::debugHex(uint16_t lenTcpDataBytes) const
                                  QString::number(getWindowSize(), 16).rightJustified(4, '0');
 
     qDebug().noquote() << " CHKS    URG ";
-    qDebug().noquote() << "0x" + QString::number(getChksum(lengthBytes() + lenTcpDataBytes), 16).rightJustified(4, '0') + " 0x" + QString::number(getUrgent(), 16).rightJustified(4, '0');
+    qDebug().noquote() << "0x" + QString::number(getChksum(), 16).rightJustified(4, '0') + " 0x" + QString::number(getUrgent(), 16).rightJustified(4, '0');
 
     if(!headerOptions.empty()){
-        const auto optionsProtocol = generateOptionsPartHeader();
+       // const auto optionsProtocol = generateOptionsPartHeader();
 
         qDebug().noquote() << " OPTIONS";
 
-        for(uint32_t i = 0, end = bitSize(optionsProtocol.getLength()); i < end; i+= bitSize<uint32_t>()){
-            qDebug().noquote() << "0x" + QString::number(optionsProtocol.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 16).rightJustified(8, '0');
+        for(uint32_t i = bitSize(20), end = bitSize(tcpHeaderFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
+            qDebug().noquote() << "0x" + QString::number(tcpHeaderFormat.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 16).rightJustified(8, '0');
         }
     }
 
@@ -236,15 +225,15 @@ void TcpHeader::debugBin(uint16_t lenTcpDataBytes) const
                          " 0b" + QString::number(getWindowSize(), 2).rightJustified(16, '0');
 
     qDebug().noquote() << "     CHECK SUMM           URGENT ";
-    qDebug().noquote() << "0b" + QString::number(getChksum(lengthBytes() + lenTcpDataBytes), 2).rightJustified(16, '0') + " 0b" + QString::number(getUrgent(), 2).rightJustified(16, '0');
+    qDebug().noquote() << "0b" + QString::number(getChksum(), 2).rightJustified(16, '0') + " 0b" + QString::number(getUrgent(), 2).rightJustified(16, '0');
 
     if(!headerOptions.empty()){
-        const auto optionsProtocol = generateOptionsPartHeader();
+        //const auto optionsProtocol = generateOptionsPartHeader();
 
         qDebug().noquote() << "             OPTIONS";
 
-        for(uint32_t i = 0, end = bitSize(optionsProtocol.getLength()); i < end; i+= bitSize<uint32_t>()){
-            qDebug().noquote() << "0b" + QString::number(optionsProtocol.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 2).rightJustified(bitSize<uint32_t>(), '0');
+        for(uint32_t i = bitSize(20), end = bitSize(tcpHeaderFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
+            qDebug().noquote() << "0b" + QString::number(tcpHeaderFormat.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 2).rightJustified(bitSize<uint32_t>(), '0');
         }
     }
 
@@ -267,7 +256,12 @@ uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp
     return htons(calcCheckSum_(buffDataPacket.get(), lenBytesBuffDataPacket));
 }
 
-bool TcpHeader::addOption(Options option, const OptionValues& values){
+bool TcpHeader::addOption(Options option, const OptionValues& values, bool lastOption){
+    if(optionsFilled){
+        qDebug() << "Список опций уже сформирован";
+        return false;
+    }
+
     if(option == Options::NOP || option == Options::EndOptions){
         qDebug() << "Опции NOP и EndOptions являются служебными и запрещены к явному добавлению";
         return false;
@@ -278,10 +272,105 @@ bool TcpHeader::addOption(Options option, const OptionValues& values){
 
 
     headerOptions[option] = values;
+
+    const static uint8_t nopCode = static_cast<uint8_t>(Options::NOP);
+    const static uint32_t nopLength = static_cast<uint32_t>(bitSize(optionsParams.at(Options::NOP).first));
+
+    //Получаем информацию об опции
+    auto [byteLength, name] = optionsParams.at(option);
+
+    if(option == Options::SACK){ //Для опции SACK считаем её размер исходя из количества блоков - значений, каждое по 8 байт
+        byteLength = std::accumulate(std::begin(values), std::end(values), 2, [](const auto accum, const auto& currValue){
+            return accum + currValue.type;
+        });
+    }
+
+    //Добавляем в протокол ячейки для записи кода и длины опции (в байтах)
+    tcpHeaderFormat.appendField({name + optionIdProtFieldName, bitLenOptionId});
+    tcpHeaderFormat.appendField({name + optionLenProtFieldName, bitLenOptionLen});
+
+    //Устанавливаем значения кода и длины ячейки
+    tcpHeaderFormat.setFieldValue(name + optionIdProtFieldName, static_cast<uint8_t>(option));
+    tcpHeaderFormat.setFieldValue(name + optionLenProtFieldName, byteLength);
+
+    //Создаем и заполняем поля значений опций
+    for(uint32_t i = 0; i < values.size(); i++){
+        const auto& [lenValueBits, value] = values.at(i);
+        tcpHeaderFormat.appendField({name + optionValProtFieldName + std::to_string(i), lenValueBits});
+        tcpHeaderFormat.setFieldValue(name + optionValProtFieldName + std::to_string(i), value);
+    }
+
+    //TODO Попытаться сделать эти действия автоматом без явного указания по типу
+    //Найти для lengthBytes() ближайшее большее делимое на 4
+    //Вычесть из него длину опции и это будет нужное кол-во NOP
+   // const int amountNOP = 1;
+
+    /*
+    for(int i = 0; i < 2; i++){
+        tcpHeaderFormat.appendField({"nop_" + std::to_string(i) + "_" + name, nopLength});
+        tcpHeaderFormat.setFieldValue("nop_" + std::to_string(i) + "_" + name, nopCode);
+    }
+    */
+    switch (option) {
+    case Options::MSS:
+        break;
+    case Options::WindowScaling:
+        tcpHeaderFormat.appendField({"nop_1_" + name, nopLength});
+        tcpHeaderFormat.setFieldValue("nop_1_" + name, nopCode);
+        break;
+    case Options::SACK_Permitted:
+        tcpHeaderFormat.appendField({"nop_1_" + name, nopLength});
+        tcpHeaderFormat.setFieldValue("nop_1_" + name, nopCode);
+
+        tcpHeaderFormat.appendField({"nop_2_" + name, nopLength});
+        tcpHeaderFormat.setFieldValue("nop_2_" + name, nopCode);
+        break;
+    case Options::SACK:
+        tcpHeaderFormat.appendField({"nop_1_" + name, nopLength});
+        tcpHeaderFormat.setFieldValue("nop_1_" + name, nopCode);
+
+        tcpHeaderFormat.appendField({"nop_2_" + name, nopLength});
+        tcpHeaderFormat.setFieldValue("nop_2_" + name, nopCode);
+        break;
+    case Options::Timestamps:
+        tcpHeaderFormat.appendField({"nop_1_" + name, nopLength});
+        tcpHeaderFormat.setFieldValue("nop_1_" + name, nopCode);
+
+        tcpHeaderFormat.appendField({"nop_2_" + name, nopLength});
+        tcpHeaderFormat.setFieldValue("nop_2_" + name, nopCode);
+        break;
+    case Options::FastOpen:
+        tcpHeaderFormat.appendField({"nop_1_" + name, nopLength});
+        tcpHeaderFormat.setFieldValue("nop_1_" + name, nopCode);
+
+        tcpHeaderFormat.appendField({"nop_2_" + name, nopLength});
+        tcpHeaderFormat.setFieldValue("nop_2_" + name, nopCode);
+        break;
+    default:
+        break;
+    }
+
+    //TODO Вынести то что ниже в отдельную функцию
+    if(lastOption)
+    {
+        optionsFilled = true;
+
+        if(tcpHeaderFormat.getLength() < maxTcpHeaderBytesLen)
+        {
+            //Если это была последняя опция и в заголовке еще есть место, добавляем опцию конца списка опций и Padding, выравнивая заголовок до конца 32-битного слова
+            tcpHeaderFormat.appendField({optionsParams.at(Options::EndOptions).second, bitSize<uint32_t>()});
+            tcpHeaderFormat.setFieldValue(optionsParams.at(Options::EndOptions).second, static_cast<uint8_t>(Options::EndOptions));
+        }
+    }
+
+    setHdrLen(static_cast<uint8_t>(lengthBytes() / sizeof(int32_t)));
+
     return true;
 }
 
-bool TcpHeader::setOptionValues(Options option, const OptionValues& values){
+bool TcpHeader::setOptionValues(Options option, const OptionValues& values)
+{
+    //Тут нет защиты от некорректного количества параметров (или от количества, которое отличается от того, что было указано при добавлении опции)
     if(option == Options::NOP || option == Options::EndOptions){
         qDebug() << "Опции NOP и EndOptions являются служебными и запрещены к явному использованию";
         return false;
@@ -291,6 +380,14 @@ bool TcpHeader::setOptionValues(Options option, const OptionValues& values){
         return false;
 
     headerOptions[option] = values;
+
+    const auto nameOption = optionsParams.at(option).second;
+
+    for(uint32_t i = 0; i < values.size(); i++){
+        const auto currValue = values.at(i).value;
+        tcpHeaderFormat.setFieldValue(nameOption + optionValProtFieldName + std::to_string(i), currValue);
+    }
+
     return true;
 }
 
@@ -317,92 +414,6 @@ std::string TcpHeader::getOptionsAsText() const
     totalOptionsLine += ")";
 
     return totalOptionsLine;
-}
-
-kivk_lib::Protocol TcpHeader::generateOptionsPartHeader() const
-{
-    //TODO Убрать это в addOption, избавиться от двухэтапного построения заголовка
-    kivk_lib::Protocol optionsPartHeader;
-
-    const uint8_t nopCode = static_cast<uint8_t>(Options::NOP);
-    const uint32_t nopLength = static_cast<uint32_t>(bitSize(optionsParams.at(Options::NOP).first));
-
-    for(const auto& [option, values] : headerOptions)
-    {
-        auto [byteLength, name] = optionsParams.at(option);
-
-        if(option == Options::SACK){ //Для опции SACK считаем её размер исходя из количества блоков - значений, каждое по 8 байт
-            byteLength = std::accumulate(std::begin(values), std::end(values), 2, [](const auto accum, const auto& currValue){
-                return accum + currValue.type;
-            });
-        }
-
-        optionsPartHeader.appendField({name + optionIdProtFieldName, bitLenOptionId});
-        optionsPartHeader.appendField({name + optionLenProtFieldName, bitLenOptionLen});
-
-        optionsPartHeader.setFieldValue(name + optionIdProtFieldName, static_cast<uint8_t>(option));
-        optionsPartHeader.setFieldValue(name + optionLenProtFieldName, byteLength);
-
-        //Создаем и заполняем поля значений опций
-        for(int i = 0; i < values.size(); i++){
-            const auto& [lenValueBits, value] = values.at(i);
-            optionsPartHeader.appendField({name + optionValProtFieldName + std::to_string(i), lenValueBits});
-            optionsPartHeader.setFieldValue(name + optionValProtFieldName + std::to_string(i), value);
-        }
-
-        //Проставляем NOP-ы
-        //TODO Попытаться сделать эти действия автоматом без явного указания по типу
-        switch (option) {
-        case Options::MSS:
-            break;
-        case Options::WindowScaling:
-            optionsPartHeader.appendField({"nop_1_" + name, nopLength});
-            optionsPartHeader.setFieldValue("nop_1_" + name, nopCode);
-            break;
-        case Options::SACK_Permitted:
-            optionsPartHeader.appendField({"nop_1_" + name, nopLength});
-            optionsPartHeader.setFieldValue("nop_1_" + name, nopCode);
-
-            optionsPartHeader.appendField({"nop_2_" + name, nopLength});
-            optionsPartHeader.setFieldValue("nop_2_" + name, nopCode);
-            break;
-        case Options::SACK:
-            optionsPartHeader.appendField({"nop_1_" + name, nopLength});
-            optionsPartHeader.setFieldValue("nop_1_" + name, nopCode);
-
-            optionsPartHeader.appendField({"nop_2_" + name, nopLength});
-            optionsPartHeader.setFieldValue("nop_2_" + name, nopCode);
-            continue;
-        case Options::Timestamps:
-            optionsPartHeader.appendField({"nop_1_" + name, nopLength});
-            optionsPartHeader.setFieldValue("nop_1_" + name, nopCode);
-
-            optionsPartHeader.appendField({"nop_2_" + name, nopLength});
-            optionsPartHeader.setFieldValue("nop_2_" + name, nopCode);
-            break;
-        case Options::FastOpen:
-            optionsPartHeader.appendField({"nop_1_" + name, nopLength});
-            optionsPartHeader.setFieldValue("nop_1_" + name, nopCode);
-
-            optionsPartHeader.appendField({"nop_2_" + name, nopLength});
-            optionsPartHeader.setFieldValue("nop_2_" + name, nopCode);
-            break;
-        default:
-            throw std::runtime_error{"Неизвестный тип опции"};
-            break;
-        }
-    }
-
-    if((lengthBytes() + optionsPartHeader.getLength()) < maxTcpHeaderBytesLen)
-    {
-        //Если в заголовке еще есть место, добавляем Padding
-        optionsPartHeader.appendField({optionsParams.at(Options::EndOptions).second, bitSize<uint32_t>()});
-        optionsPartHeader.setFieldValue(optionsParams.at(Options::EndOptions).second, static_cast<uint8_t>(Options::EndOptions));
-    }
-
-    //TODO Сгенерировать итоговый заголовок с учётом Опций
-
-    return optionsPartHeader;
 }
 
 uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint16_t buffByteSize) const
@@ -435,9 +446,9 @@ bool TcpHeader::containsOption(Options opt) const
     return headerOptions.find(opt) != headerOptions.end();
 }
 
-void TcpHeader::updateChkSum(kivk_lib::Protocol& prot, uint16_t lenTcp) const
+void TcpHeader::updateChkSum(uint16_t lenTcp)
 {
-    prot.setFieldValue("chksum", calcCheckSum(srcIp, dstIp, lenTcp));
+    tcpHeaderFormat.setFieldValue("chksum", calcCheckSum(srcIp, dstIp, lenTcp));
 }
 
 uint32_t TcpHeader::generateRandomNumber() const
