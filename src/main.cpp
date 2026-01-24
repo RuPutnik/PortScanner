@@ -30,7 +30,7 @@ int main(int argc, char** argv)
         return errno;
     }
 
-    sockaddr_in destAddr{AF_INET, 0, targetAddress, 0};
+    sockaddr_in destAddr{AF_INET, 0, targetAddress, {0}};
 
     memset(destAddr.sin_zero, 0, sizeof(destAddr.sin_zero));
 

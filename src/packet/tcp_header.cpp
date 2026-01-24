@@ -195,8 +195,6 @@ void TcpHeader::debugHex(uint16_t lenTcpDataBytes) const
     qDebug().noquote() << "0x" + QString::number(getChksum(), 16).rightJustified(4, '0') + " 0x" + QString::number(getUrgent(), 16).rightJustified(4, '0');
 
     if(!headerOptions.empty()){
-       // const auto optionsProtocol = generateOptionsPartHeader();
-
         qDebug().noquote() << " OPTIONS";
 
         for(uint32_t i = bitSize(20), end = bitSize(tcpHeaderFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
@@ -228,8 +226,6 @@ void TcpHeader::debugBin(uint16_t lenTcpDataBytes) const
     qDebug().noquote() << "0b" + QString::number(getChksum(), 2).rightJustified(16, '0') + " 0b" + QString::number(getUrgent(), 2).rightJustified(16, '0');
 
     if(!headerOptions.empty()){
-        //const auto optionsProtocol = generateOptionsPartHeader();
-
         qDebug().noquote() << "             OPTIONS";
 
         for(uint32_t i = bitSize(20), end = bitSize(tcpHeaderFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
@@ -251,12 +247,13 @@ uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp
 
     memcpy(buffDataPacket.get(), &pseudoHeader, sizeof(PseudoTcpHeader));
     //Преобразуем к void* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
-    memcpy(static_cast<void*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader), tcpHeaderFormat.getInternalBuffer(), lenTcp);
+    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader), tcpHeaderFormat.getInternalBuffer(), lenTcp);
 
     return htons(calcCheckSum_(buffDataPacket.get(), lenBytesBuffDataPacket));
 }
 
-bool TcpHeader::addOption(Options option, const OptionValues& values, bool lastOption){
+bool TcpHeader::addOption(Options option, const OptionValues& values, bool lastOption)
+{
     if(optionsFilled){
         qDebug() << "Список опций уже сформирован";
         return false;
@@ -270,97 +267,36 @@ bool TcpHeader::addOption(Options option, const OptionValues& values, bool lastO
     if(headerOptions.find(option) != std::end(headerOptions))
         return false;
 
-
     headerOptions[option] = values;
 
-    const static uint8_t nopCode = static_cast<uint8_t>(Options::NOP);
-    const static uint32_t nopLength = static_cast<uint32_t>(bitSize(optionsParams.at(Options::NOP).first));
-
     //Получаем информацию об опции
-    auto [byteLength, name] = optionsParams.at(option);
+    auto [optionLenBytes, optionName] = optionsParams.at(option);
 
     if(option == Options::SACK){ //Для опции SACK считаем её размер исходя из количества блоков - значений, каждое по 8 байт
-        byteLength = std::accumulate(std::begin(values), std::end(values), 2, [](const auto accum, const auto& currValue){
+        optionLenBytes = std::accumulate(std::begin(values), std::end(values), 2, [](const auto accum, const auto& currValue){
             return accum + currValue.type;
         });
     }
 
     //Добавляем в протокол ячейки для записи кода и длины опции (в байтах)
-    tcpHeaderFormat.appendField({name + optionIdProtFieldName, bitLenOptionId});
-    tcpHeaderFormat.appendField({name + optionLenProtFieldName, bitLenOptionLen});
+    tcpHeaderFormat.appendField({optionName + optionIdProtFieldName, bitLenOptionId});
+    tcpHeaderFormat.appendField({optionName + optionLenProtFieldName, bitLenOptionLen});
 
     //Устанавливаем значения кода и длины ячейки
-    tcpHeaderFormat.setFieldValue(name + optionIdProtFieldName, static_cast<uint8_t>(option));
-    tcpHeaderFormat.setFieldValue(name + optionLenProtFieldName, byteLength);
+    tcpHeaderFormat.setFieldValue(optionName + optionIdProtFieldName, static_cast<uint8_t>(option));
+    tcpHeaderFormat.setFieldValue(optionName + optionLenProtFieldName, optionLenBytes);
 
     //Создаем и заполняем поля значений опций
     for(uint32_t i = 0; i < values.size(); i++){
         const auto& [lenValueBits, value] = values.at(i);
-        tcpHeaderFormat.appendField({name + optionValProtFieldName + std::to_string(i), lenValueBits});
-        tcpHeaderFormat.setFieldValue(name + optionValProtFieldName + std::to_string(i), value);
+        tcpHeaderFormat.appendField({optionName + optionValProtFieldName + std::to_string(i), lenValueBits});
+        tcpHeaderFormat.setFieldValue(optionName + optionValProtFieldName + std::to_string(i), value);
     }
 
-    //TODO Попытаться сделать эти действия автоматом без явного указания по типу
-    //Найти для lengthBytes() ближайшее большее делимое на 4
-    //Вычесть из него длину опции и это будет нужное кол-во NOP
-   // const int amountNOP = 1;
+    appendNopOptions(optionsParams.at(option));
 
-    /*
-    for(int i = 0; i < 2; i++){
-        tcpHeaderFormat.appendField({"nop_" + std::to_string(i) + "_" + name, nopLength});
-        tcpHeaderFormat.setFieldValue("nop_" + std::to_string(i) + "_" + name, nopCode);
-    }
-    */
-    switch (option) {
-    case Options::MSS:
-        break;
-    case Options::WindowScaling:
-        tcpHeaderFormat.appendField({"nop_1_" + name, nopLength});
-        tcpHeaderFormat.setFieldValue("nop_1_" + name, nopCode);
-        break;
-    case Options::SACK_Permitted:
-        tcpHeaderFormat.appendField({"nop_1_" + name, nopLength});
-        tcpHeaderFormat.setFieldValue("nop_1_" + name, nopCode);
-
-        tcpHeaderFormat.appendField({"nop_2_" + name, nopLength});
-        tcpHeaderFormat.setFieldValue("nop_2_" + name, nopCode);
-        break;
-    case Options::SACK:
-        tcpHeaderFormat.appendField({"nop_1_" + name, nopLength});
-        tcpHeaderFormat.setFieldValue("nop_1_" + name, nopCode);
-
-        tcpHeaderFormat.appendField({"nop_2_" + name, nopLength});
-        tcpHeaderFormat.setFieldValue("nop_2_" + name, nopCode);
-        break;
-    case Options::Timestamps:
-        tcpHeaderFormat.appendField({"nop_1_" + name, nopLength});
-        tcpHeaderFormat.setFieldValue("nop_1_" + name, nopCode);
-
-        tcpHeaderFormat.appendField({"nop_2_" + name, nopLength});
-        tcpHeaderFormat.setFieldValue("nop_2_" + name, nopCode);
-        break;
-    case Options::FastOpen:
-        tcpHeaderFormat.appendField({"nop_1_" + name, nopLength});
-        tcpHeaderFormat.setFieldValue("nop_1_" + name, nopCode);
-
-        tcpHeaderFormat.appendField({"nop_2_" + name, nopLength});
-        tcpHeaderFormat.setFieldValue("nop_2_" + name, nopCode);
-        break;
-    default:
-        break;
-    }
-
-    //TODO Вынести то что ниже в отдельную функцию
-    if(lastOption)
-    {
-        optionsFilled = true;
-
-        if(tcpHeaderFormat.getLength() < maxTcpHeaderLenBytes)
-        {
-            //Если это была последняя опция и в заголовке еще есть место, добавляем опцию конца списка опций и Padding, выравнивая заголовок до конца 32-битного слова
-            tcpHeaderFormat.appendField({optionsParams.at(Options::EndOptions).second, bitSize<uint32_t>()});
-            tcpHeaderFormat.setFieldValue(optionsParams.at(Options::EndOptions).second, static_cast<uint8_t>(Options::EndOptions));
-        }
+    if(lastOption){
+        appendEndOptionsBytes();
     }
 
     setHdrLen(static_cast<uint8_t>(lengthBytes() / sizeof(int32_t)));
@@ -444,6 +380,44 @@ uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint16_t buffByteSize) const
 bool TcpHeader::containsOption(Options opt) const
 {
     return headerOptions.find(opt) != headerOptions.end();
+}
+
+void TcpHeader::appendNopOptions(const OptionData& option)
+{
+    //Получаем информацию об опции
+    const auto [optionLenBytes, optionName] = option;
+
+    //Расчитываем количество NOP для выравнивания к 4 байтам опции и добавляем их
+    const int nearDivWithoutRemainder = calcNearDivisibleWithoutRemainder(optionLenBytes);
+    const int amountNOP = nearDivWithoutRemainder - optionLenBytes;
+
+    for(int i = 0; i < amountNOP; i++){
+        tcpHeaderFormat.appendField({"nop_" + std::to_string(i) + "_" + optionName, bitSize<uint8_t>()});
+        tcpHeaderFormat.setFieldValue("nop_" + std::to_string(i) + "_" + optionName, static_cast<uint8_t>(Options::NOP));
+    }
+}
+
+void TcpHeader::appendEndOptionsBytes()
+{
+    optionsFilled = true;
+
+    if(tcpHeaderFormat.getLength() < maxTcpHeaderLenBytes)
+    {
+        //Если это была последняя опция и в заголовке еще есть место, добавляем опцию конца списка опций и Padding, выравнивая заголовок до конца 32-битного слова
+        tcpHeaderFormat.appendField({optionsParams.at(Options::EndOptions).second, bitSize<uint32_t>()});
+        tcpHeaderFormat.setFieldValue(optionsParams.at(Options::EndOptions).second, static_cast<uint8_t>(Options::EndOptions));
+    }
+}
+
+int TcpHeader::calcNearDivisibleWithoutRemainder(int value, int delimeter)
+{
+    int nearestDivisible = value;
+
+    while((nearestDivisible % delimeter) != 0){
+        nearestDivisible++;
+    }
+
+    return nearestDivisible;
 }
 
 void TcpHeader::updateChkSum(uint16_t lenTcp)

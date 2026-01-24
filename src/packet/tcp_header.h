@@ -142,6 +142,9 @@ private:
     uint32_t generateRandomNumber() const;
     uint16_t calcCheckSum_(uint16_t *buff, uint16_t buffByteSize) const;
     bool containsOption(Options opt) const;
+    void appendNopOptions(const OptionData& option);
+    void appendEndOptionsBytes();
+    int calcNearDivisibleWithoutRemainder(int value, int delimeter = sizeof(uint32_t));
 };
 
 }
