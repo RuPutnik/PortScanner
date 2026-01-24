@@ -13,6 +13,7 @@ namespace network {
 
 class TcpHeader final
 {
+    friend class TcpPacket;
 public:
     enum Flags
     {
@@ -56,7 +57,6 @@ public:
 
     TcpHeader(uint32_t sourceIp, uint32_t destinationIp);
 
-    std::unique_ptr<const char[]> generateCompleteHeader(uint16_t lenTcpDataBytes);
     uint16_t lengthBytes() const noexcept;
 
     uint16_t getSrcPort() const;
@@ -93,9 +93,8 @@ public:
     uint16_t getUrgent() const;
     void setUrgent(uint16_t newUrgent);
 
-    void debugHex(uint16_t lenTcpDataBytes = 0) const;
-    void debugBin(uint16_t lenTcpDataBytes = 0) const;
-    uint16_t calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const;
+    void debugHex() const;
+    void debugBin() const;
 
     // Работа с опциями
     bool addOption(Options option, const OptionValues& values = {}, bool lastOption = false);
@@ -138,9 +137,14 @@ private:
     bool optionsFilled;
 
     void setChksum(uint16_t newChksum);
-    void updateChkSum(uint16_t lenTcp);
-    uint32_t generateRandomNumber() const;
-    uint16_t calcCheckSum_(uint16_t *buff, uint16_t buffByteSize) const;
+
+    std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t tcpPayloadLenBytes);
+
+    //Полезная нагрузка TCP пакета участвует в подсчете КС помимо полей заголовка
+    void updateChkSum(const std::shared_ptr<char[]>& payload, uint32_t lenTcpPacket);
+    uint32_t generateRandomNumber() const;   
+    uint16_t calcCheckSum(uint32_t srcIp, uint32_t dstIp, const std::shared_ptr<char[]>& payloadTcp, uint32_t tcpPayloadLenBytes) const;
+    uint16_t calcCheckSum_(uint16_t* buff, uint32_t buffByteSize) const;
     bool containsOption(Options opt) const;
     void appendNopOptions(const OptionData& option);
     void appendEndOptionsBytes();

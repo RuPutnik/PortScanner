@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "packet/tcp_header.h"
+#include "packet/tcp_packet.h"
 
 using namespace network;
 
@@ -54,13 +55,14 @@ int main(int argc, char** argv)
     qDebug() << "SYN" << tcpHeader.isSyn();
     qDebug() << "FIN" << tcpHeader.isFin();
 
+    network::TcpPacket tcpPack{tcpHeader};
+    const auto headerData = tcpPack.getData();
+   // const auto headerData = tcpHeader.generateCompleteHeader({}, 0);
     qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";
-    const auto headerData = tcpHeader.generateCompleteHeader(0);
-
     while(true) {
         sleep(1);
         // Наш TCP пакет пока что будет состоять только из заголовка (возможно, с опциями), без данных
-        if (sendto(fd, headerData.get(), tcpHeader.lengthBytes(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
+        if (sendto(fd, headerData.get(), tcpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
             perror("packet send error:");
     }
 

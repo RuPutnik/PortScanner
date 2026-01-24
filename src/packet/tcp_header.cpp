@@ -30,10 +30,9 @@ TcpHeader::TcpHeader(uint32_t sourceIp, uint32_t destinationIp):
     setWindowSize(defaultWindowSize);
 }
 
-std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(uint16_t lenTcpDataBytes)
+std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t tcpPayloadLenBytes)
 {
-    //TODO Учитывать данные пакета при расчете КС
-    updateChkSum(lengthBytes());
+    updateChkSum(payload, tcpPayloadLenBytes);
 
     char* const rawDataHeader = new char[lengthBytes()];
 
@@ -162,7 +161,7 @@ uint16_t TcpHeader::getChksum() const
 
 void TcpHeader::setChksum(uint16_t newChksum)
 {
-    tcpHeaderFormat.setFieldValue("chksum", newChksum); //TODO Разобраться почему тут не нужно использовать htons
+    tcpHeaderFormat.setFieldValue("chksum", newChksum);
 }
 
 uint16_t TcpHeader::getUrgent() const
@@ -175,7 +174,7 @@ void TcpHeader::setUrgent(uint16_t newUrgent)
     tcpHeaderFormat.setFieldValue("urgent", newUrgent);
 }
 
-void TcpHeader::debugHex(uint16_t lenTcpDataBytes) const
+void TcpHeader::debugHex() const
 {
     qDebug().noquote() << "---TCP-HEADER---";
     qDebug().noquote() << "   SP     DP ";
@@ -205,7 +204,7 @@ void TcpHeader::debugHex(uint16_t lenTcpDataBytes) const
     qDebug().noquote() << "----------------";
 }
 
-void TcpHeader::debugBin(uint16_t lenTcpDataBytes) const
+void TcpHeader::debugBin() const
 {
     qDebug().noquote() << "---------------TCP----HEADER---------------";
 
@@ -236,18 +235,22 @@ void TcpHeader::debugBin(uint16_t lenTcpDataBytes) const
     qDebug().noquote() << "-------------------------------------------";
 }
 
-uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, uint16_t lenTcp) const
+uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, const std::shared_ptr<char[]>& payloadTcp, uint32_t tcpPayloadLenBytes) const
 {
-    const PseudoTcpHeader pseudoHeader{srcIp, dstIp, lenTcp};
+    const uint32_t tcpPacketTotalLenBytes = lengthBytes() + tcpPayloadLenBytes;
 
-    const uint16_t lenBytesBuffDataPacket = sizeof(PseudoTcpHeader) + lenTcp;
+    //TODO Учитывать данные пакета при расчете КС
+    const PseudoTcpHeader pseudoHeader{srcIp, dstIp, static_cast<uint16_t>(tcpPacketTotalLenBytes)}; //Преобразование важно, т.к. в PseudoTcpHeader поле длины занимает 2 байта
 
-    //Здесь будут храниться псевдозаголовок TCP и настоящий заголовок TCP, а так же по идее должны опции и данные
+    const uint32_t lenBytesBuffDataPacket = sizeof(PseudoTcpHeader) + tcpPacketTotalLenBytes;
+
+    //Здесь будут храниться псевдозаголовок TCP, настоящий заголовок TCP, а также полезная нагрузка TCP пакета
     const std::unique_ptr<uint16_t[]> buffDataPacket{new uint16_t[lenBytesBuffDataPacket / 2]};
 
     memcpy(buffDataPacket.get(), &pseudoHeader, sizeof(PseudoTcpHeader));
-    //Преобразуем к void* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
-    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader), tcpHeaderFormat.getInternalBuffer(), lenTcp);
+    //Преобразуем к char* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
+    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader), tcpHeaderFormat.getInternalBuffer(), lengthBytes());
+    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader) + lengthBytes(), payloadTcp.get(), tcpPayloadLenBytes);
 
     return htons(calcCheckSum_(buffDataPacket.get(), lenBytesBuffDataPacket));
 }
@@ -352,7 +355,7 @@ std::string TcpHeader::getOptionsAsText() const
     return totalOptionsLine;
 }
 
-uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint16_t buffByteSize) const
+uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint32_t buffByteSize) const
 {
     // Compute Internet Checksum for "buffSize" bytes
     // beginning at location "buff".
@@ -420,9 +423,9 @@ int TcpHeader::calcNearDivisibleWithoutRemainder(int value, int delimeter)
     return nearestDivisible;
 }
 
-void TcpHeader::updateChkSum(uint16_t lenTcp)
+void TcpHeader::updateChkSum(const std::shared_ptr<char[]>& payload, uint32_t lenTcpPacket)
 {
-    tcpHeaderFormat.setFieldValue("chksum", calcCheckSum(srcIp, dstIp, lenTcp));
+    tcpHeaderFormat.setFieldValue("chksum", calcCheckSum(srcIp, dstIp, payload, lenTcpPacket));
 }
 
 uint32_t TcpHeader::generateRandomNumber() const
