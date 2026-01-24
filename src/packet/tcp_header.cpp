@@ -355,7 +355,7 @@ bool TcpHeader::addOption(Options option, const OptionValues& values, bool lastO
     {
         optionsFilled = true;
 
-        if(tcpHeaderFormat.getLength() < maxTcpHeaderBytesLen)
+        if(tcpHeaderFormat.getLength() < maxTcpHeaderLenBytes)
         {
             //Если это была последняя опция и в заголовке еще есть место, добавляем опцию конца списка опций и Padding, выравнивая заголовок до конца 32-битного слова
             tcpHeaderFormat.appendField({optionsParams.at(Options::EndOptions).second, bitSize<uint32_t>()});

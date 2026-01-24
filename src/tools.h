@@ -1,17 +1,23 @@
 #ifndef TOOLS_H
 #define TOOLS_H
 
+#include <cstdint>
+#include <limits>
+
 namespace network {
 
 template<class T>
-constexpr static inline uint64_t bitSize() noexcept{
+[[maybe_unused]] constexpr static inline uint64_t bitSize() noexcept{
     static_assert(sizeof(T) <= std::numeric_limits<uint32_t>::max(), "Вычисляемое значение больше максимального значения uint32_t");
     return __CHAR_BIT__ * sizeof(T);
 }
 
-constexpr static inline uint64_t bitSize(uint32_t amountBytes) noexcept{
+[[maybe_unused]] constexpr static inline uint64_t bitSize(uint32_t amountBytes) noexcept{
     return __CHAR_BIT__ * amountBytes;
 }
+
+const inline uint32_t ethernetMTULenBytes = 1500;
+const inline uint32_t ipHeaderLenBytes = 20;
 
 }
 

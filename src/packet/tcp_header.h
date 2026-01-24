@@ -2,7 +2,6 @@
 #define TCP_HEADER_H
 
 #include <memory>
-#include <limits>
 #include <unordered_map>
 #include <string>
 
@@ -51,6 +50,9 @@ public:
     };
 
     using OptionValues = std::vector<OptionValue>;
+
+    //20 байт минимальный размер заголовка (без опций) и 40 байт максимальный размер опций в заголовке
+    const static inline uint32_t maxTcpHeaderLenBytes = 60;
 
     TcpHeader(uint32_t sourceIp, uint32_t destinationIp);
 
@@ -118,7 +120,7 @@ private:
     const static inline std::string optionIdProtFieldName = "_id"; //Постфиксы названий полей в протоколе опций
     const static inline std::string optionLenProtFieldName = "_len";
     const static inline std::string optionValProtFieldName = "_value_";
-    const static inline uint32_t maxTcpHeaderBytesLen = 60;
+
     constexpr static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
     const static std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> optionsParams;
 
