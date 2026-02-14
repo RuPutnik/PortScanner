@@ -18,6 +18,7 @@ template<class T>
 
 const inline uint32_t ethernetMTULenBytes = 1500;
 const inline uint32_t ipHeaderLenBytes = 20;
+constexpr static inline uint32_t maxTransportPacketLenBytes = ethernetMTULenBytes - ipHeaderLenBytes;  // = 1480
 
 }
 

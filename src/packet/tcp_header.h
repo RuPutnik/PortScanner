@@ -5,15 +5,15 @@
 #include <unordered_map>
 #include <string>
 
-#include <protocol.h>
-
-#include "../tools.h"
+#include "i_header.h"
 
 namespace network {
+template<class H>
+class NetPacket;
 
-class TcpHeader final
+class TcpHeader final : public IHeader
 {
-    friend class TcpPacket;
+    friend class NetPacket<TcpHeader>;
 public:
     enum Flags
     {
@@ -57,8 +57,6 @@ public:
 
     TcpHeader(uint32_t sourceIp, uint32_t destinationIp);
 
-    uint16_t lengthBytes() const noexcept;
-
     uint16_t getSrcPort() const;
     void setSrcPort(uint16_t newSrcPort);
 
@@ -93,24 +91,18 @@ public:
     uint16_t getUrgent() const;
     void setUrgent(uint16_t newUrgent);
 
-    void debugHex() const;
-    void debugBin() const;
+    void debugHex() const override;
+    void debugBin() const override;
 
     // Работа с опциями
     bool addOption(Options option, const OptionValues& values = {}, bool lastOption = false);
     bool setOptionValues(Options option, const OptionValues& values);
+
     std::string getOptionsAsText() const;
+    uint32_t maxPayloadLengthBytes() const override;
 
 private:
-    struct PseudoTcpHeader final
-    {
-        PseudoTcpHeader(uint32_t ipSource, uint32_t ipDestination, uint16_t tcpPacketLengthBytes);
 
-        uint32_t srcIp;
-        uint32_t dstIp;
-        const uint16_t protoId;
-        uint16_t tcpByteLen;
-    };
 
     using OptionData = std::pair<int32_t, std::string>; //Размер в байтах, текстовое название
 
@@ -120,16 +112,8 @@ private:
     const static inline std::string optionLenProtFieldName = "_len";
     const static inline std::string optionValProtFieldName = "_value_";
 
-    constexpr static inline uint16_t defaultWindowSize = std::numeric_limits<int16_t>::max();
+    constexpr static inline uint16_t defaultWindowSize = std::numeric_limits<uint16_t>::max();
     const static std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> optionsParams;
-
-    kivk_lib::Protocol tcpHeaderFormat{{
-        {"srcPort", 16}, {"dstPort", 16},
-        {"seqNumber", 32},
-        {"ackNumber", 32},
-        {"headerLength", 4}, {"reserver", 6}, {"urg", 1}, {"ack", 1}, {"psh", 1}, {"rst", 1}, {"syn", 1}, {"fin", 1}, {"windowSize", 16},
-        {"chksum", 16}, {"urgent", 16}
-    }};
 
     uint32_t srcIp;
     uint32_t dstIp;
@@ -138,7 +122,7 @@ private:
 
     void setChksum(uint16_t newChksum);
 
-    std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t tcpPayloadLenBytes);
+    std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes) override;
 
     //Полезная нагрузка TCP пакета участвует в подсчете КС помимо полей заголовка
     void updateChkSum(const std::shared_ptr<char[]>& payload, uint32_t lenTcpPacket);
@@ -149,6 +133,7 @@ private:
     void appendNopOptions(const OptionData& option);
     void appendEndOptionsBytes();
     int calcNearDivisibleWithoutRemainder(int value, int delimeter = sizeof(uint32_t));
+
 };
 
 }

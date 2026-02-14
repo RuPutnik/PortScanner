@@ -1,11 +1,11 @@
 #ifndef ICMP_HEADER_H
 #define ICMP_HEADER_H
 
-#include <protocol.h>
+#include "i_header.h"
 
 namespace network {
 
-class IcmpHeader final
+class IcmpHeader final : public IHeader
 {
 public:
     IcmpHeader();

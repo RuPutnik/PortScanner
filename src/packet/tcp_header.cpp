@@ -22,73 +22,76 @@ const std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> TcpHeader::o
 };
 
 TcpHeader::TcpHeader(uint32_t sourceIp, uint32_t destinationIp):
+    IHeader{{{
+        {"srcPort", 16}, {"dstPort", 16},
+            {"seqNumber", 32},
+            {"ackNumber", 32},
+            {"headerLength", 4}, {"reserver", 6}, {"urg", 1}, {"ack", 1}, {"psh", 1}, {"rst", 1}, {"syn", 1}, {"fin", 1}, {"windowSize", 16},
+            {"chksum", 16}, {"urgent", 16}
+        }}},
     srcIp{sourceIp},
     dstIp{destinationIp},
     optionsFilled{false}
 {
     setSeqNumber(generateRandomNumber());
     setWindowSize(defaultWindowSize);
+    setHdrLen(static_cast<uint8_t>(lengthBytes() / sizeof(int32_t)));
 }
 
-std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t tcpPayloadLenBytes)
+std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes)
 {
-    updateChkSum(payload, tcpPayloadLenBytes);
+    updateChkSum(payload, payloadLenBytes);
 
     char* const rawDataHeader = new char[lengthBytes()];
 
-    memcpy(rawDataHeader, tcpHeaderFormat.getInternalBuffer(), lengthBytes());
+    memcpy(rawDataHeader, headerFormat.getInternalBuffer(), lengthBytes());
 
     return std::unique_ptr<const char[]>{rawDataHeader};
 }
 
-uint16_t TcpHeader::lengthBytes() const noexcept
-{
-    return static_cast<uint16_t>(tcpHeaderFormat.getLength());
-}
-
 uint16_t TcpHeader::getSrcPort() const
 {
-    return tcpHeaderFormat.readFieldValue<uint16_t>("srcPort");
+    return headerFormat.readFieldValue<uint16_t>("srcPort");
 }
 
 void TcpHeader::setSrcPort(uint16_t newSrcPort)
 {
-    tcpHeaderFormat.setFieldValue("srcPort", newSrcPort);
+    headerFormat.setFieldValue("srcPort", newSrcPort);
 }
 
 uint16_t TcpHeader::getDstPort() const
 {
-    return tcpHeaderFormat.readFieldValue<uint16_t>("dstPort");
+    return headerFormat.readFieldValue<uint16_t>("dstPort");
 }
 
 void TcpHeader::setDstPort(uint16_t newDstPort)
 {
-    tcpHeaderFormat.setFieldValue("dstPort", newDstPort);
+    headerFormat.setFieldValue("dstPort", newDstPort);
 }
 
 uint32_t TcpHeader::getSeqNumber() const
 {
-    return tcpHeaderFormat.readFieldValue<uint32_t>("seqNumber");
+    return headerFormat.readFieldValue<uint32_t>("seqNumber");
 }
 
 void TcpHeader::setSeqNumber(uint32_t newSeqNumber)
 {
-    tcpHeaderFormat.setFieldValue("seqNumber", newSeqNumber);
+    headerFormat.setFieldValue("seqNumber", newSeqNumber);
 }
 
 uint32_t TcpHeader::getAckNumber() const
 {
-    return tcpHeaderFormat.readFieldValue<uint32_t>("ackNumber");
+    return headerFormat.readFieldValue<uint32_t>("ackNumber");
 }
 
 void TcpHeader::setAckNumber(uint32_t newAckNumber)
 {
-    tcpHeaderFormat.setFieldValue("ackNumber", newAckNumber);
+    headerFormat.setFieldValue("ackNumber", newAckNumber);
 }
 
 uint8_t TcpHeader::getHdrLen() const
 {
-    return tcpHeaderFormat.readFieldValue<uint8_t>("headerLength");
+    return headerFormat.readFieldValue<uint8_t>("headerLength");
 }
 
 void TcpHeader::setHdrLen(uint8_t newHdrLen)
@@ -96,47 +99,47 @@ void TcpHeader::setHdrLen(uint8_t newHdrLen)
     if(newHdrLen > 0xF) //т.к. больше 4 бит по протоколу нельзя на размер использовать
         return;
 
-    tcpHeaderFormat.setFieldValue("headerLength", newHdrLen);
+    headerFormat.setFieldValue("headerLength", newHdrLen);
 }
 
 bool TcpHeader::isUrg() const
 {
-    return tcpHeaderFormat.readFieldValue<bool>("urg");
+    return headerFormat.readFieldValue<bool>("urg");
 }
 
 bool TcpHeader::isAck() const
 {
-    return tcpHeaderFormat.readFieldValue<bool>("ack");
+    return headerFormat.readFieldValue<bool>("ack");
 }
 
 bool TcpHeader::isPsh() const
 {
-    return tcpHeaderFormat.readFieldValue<bool>("psh");
+    return headerFormat.readFieldValue<bool>("psh");
 }
 
 bool TcpHeader::isRst() const
 {
-    return tcpHeaderFormat.readFieldValue<bool>("rst");
+    return headerFormat.readFieldValue<bool>("rst");
 }
 
 bool TcpHeader::isSyn() const
 {
-    return tcpHeaderFormat.readFieldValue<bool>("syn");
+    return headerFormat.readFieldValue<bool>("syn");
 }
 
 bool TcpHeader::isFin() const
 {
-    return tcpHeaderFormat.readFieldValue<bool>("fin");
+    return headerFormat.readFieldValue<bool>("fin");
 }
 
 uint8_t TcpHeader::getFlags() const
 {
-    return tcpHeaderFormat.readGhostFieldValue<uint8_t>(106, 6); //Флаги начинаются со 106 бита
+    return headerFormat.readGhostFieldValue<uint8_t>(106, 6); //Флаги начинаются со 106 бита
 }
 
 void TcpHeader::setFlags(uint8_t flags)
 {
-    tcpHeaderFormat.setGhostFieldValue(106, 6, flags);
+    headerFormat.setGhostFieldValue(106, 6, flags);
 }
 
 void TcpHeader::resetFlags()
@@ -146,32 +149,32 @@ void TcpHeader::resetFlags()
 
 uint16_t TcpHeader::getWindowSize() const
 {
-    return tcpHeaderFormat.readFieldValue<uint16_t>("windowSize");
+    return headerFormat.readFieldValue<uint16_t>("windowSize");
 }
 
 void TcpHeader::setWindowSize(uint16_t newWindowSize)
 {
-    tcpHeaderFormat.setFieldValue("windowSize", newWindowSize);
+    headerFormat.setFieldValue("windowSize", newWindowSize);
 }
 
 uint16_t TcpHeader::getChksum() const
 {
-    return tcpHeaderFormat.readFieldValue<uint16_t>("chksum");
+    return headerFormat.readFieldValue<uint16_t>("chksum");
 }
 
 void TcpHeader::setChksum(uint16_t newChksum)
 {
-    tcpHeaderFormat.setFieldValue("chksum", newChksum);
+    headerFormat.setFieldValue("chksum", newChksum);
 }
 
 uint16_t TcpHeader::getUrgent() const
 {
-    return tcpHeaderFormat.readFieldValue<uint16_t>("urgent");
+    return headerFormat.readFieldValue<uint16_t>("urgent");
 }
 
 void TcpHeader::setUrgent(uint16_t newUrgent)
 {
-    tcpHeaderFormat.setFieldValue("urgent", newUrgent);
+    headerFormat.setFieldValue("urgent", newUrgent);
 }
 
 void TcpHeader::debugHex() const
@@ -196,8 +199,8 @@ void TcpHeader::debugHex() const
     if(!headerOptions.empty()){
         qDebug().noquote() << " OPTIONS";
 
-        for(uint32_t i = bitSize(20), end = bitSize(tcpHeaderFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
-            qDebug().noquote() << "0x" + QString::number(tcpHeaderFormat.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 16).rightJustified(8, '0');
+        for(uint32_t i = bitSize(20), end = bitSize(headerFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
+            qDebug().noquote() << "0x" + QString::number(headerFormat.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 16).rightJustified(8, '0');
         }
     }
 
@@ -227,8 +230,8 @@ void TcpHeader::debugBin() const
     if(!headerOptions.empty()){
         qDebug().noquote() << "             OPTIONS";
 
-        for(uint32_t i = bitSize(20), end = bitSize(tcpHeaderFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
-            qDebug().noquote() << "0b" + QString::number(tcpHeaderFormat.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 2).rightJustified(bitSize<uint32_t>(), '0');
+        for(uint32_t i = bitSize(20), end = bitSize(headerFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
+            qDebug().noquote() << "0b" + QString::number(headerFormat.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 2).rightJustified(bitSize<uint32_t>(), '0');
         }
     }
 
@@ -240,17 +243,17 @@ uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, const std::shar
     const uint32_t tcpPacketTotalLenBytes = lengthBytes() + tcpPayloadLenBytes;
 
     //TODO Учитывать данные пакета при расчете КС
-    const PseudoTcpHeader pseudoHeader{srcIp, dstIp, static_cast<uint16_t>(tcpPacketTotalLenBytes)}; //Преобразование важно, т.к. в PseudoTcpHeader поле длины занимает 2 байта
+    const PseudoIpHeader pseudoHeader{srcIp, dstIp, static_cast<uint16_t>(tcpPacketTotalLenBytes)}; //Преобразование важно, т.к. в PseudoTcpHeader поле длины занимает 2 байта
 
-    const uint32_t lenBytesBuffDataPacket = sizeof(PseudoTcpHeader) + tcpPacketTotalLenBytes;
+    const uint32_t lenBytesBuffDataPacket = sizeof(PseudoIpHeader) + tcpPacketTotalLenBytes;
 
     //Здесь будут храниться псевдозаголовок TCP, настоящий заголовок TCP, а также полезная нагрузка TCP пакета
     const std::unique_ptr<uint16_t[]> buffDataPacket{new uint16_t[lenBytesBuffDataPacket / 2]};
 
-    memcpy(buffDataPacket.get(), &pseudoHeader, sizeof(PseudoTcpHeader));
+    memcpy(buffDataPacket.get(), &pseudoHeader, sizeof(PseudoIpHeader));
     //Преобразуем к char* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
-    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader), tcpHeaderFormat.getInternalBuffer(), lengthBytes());
-    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizeof(PseudoTcpHeader) + lengthBytes(), payloadTcp.get(), tcpPayloadLenBytes);
+    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizeof(PseudoIpHeader), headerFormat.getInternalBuffer(), lengthBytes());
+    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizeof(PseudoIpHeader) + lengthBytes(), payloadTcp.get(), tcpPayloadLenBytes);
 
     return htons(calcCheckSum_(buffDataPacket.get(), lenBytesBuffDataPacket));
 }
@@ -282,18 +285,18 @@ bool TcpHeader::addOption(Options option, const OptionValues& values, bool lastO
     }
 
     //Добавляем в протокол ячейки для записи кода и длины опции (в байтах)
-    tcpHeaderFormat.appendField({optionName + optionIdProtFieldName, bitLenOptionId});
-    tcpHeaderFormat.appendField({optionName + optionLenProtFieldName, bitLenOptionLen});
+    headerFormat.appendField({optionName + optionIdProtFieldName, bitLenOptionId});
+    headerFormat.appendField({optionName + optionLenProtFieldName, bitLenOptionLen});
 
     //Устанавливаем значения кода и длины ячейки
-    tcpHeaderFormat.setFieldValue(optionName + optionIdProtFieldName, static_cast<uint8_t>(option));
-    tcpHeaderFormat.setFieldValue(optionName + optionLenProtFieldName, optionLenBytes);
+    headerFormat.setFieldValue(optionName + optionIdProtFieldName, static_cast<uint8_t>(option));
+    headerFormat.setFieldValue(optionName + optionLenProtFieldName, optionLenBytes);
 
     //Создаем и заполняем поля значений опций
     for(uint32_t i = 0; i < values.size(); i++){
         const auto& [lenValueBits, value] = values.at(i);
-        tcpHeaderFormat.appendField({optionName + optionValProtFieldName + std::to_string(i), lenValueBits});
-        tcpHeaderFormat.setFieldValue(optionName + optionValProtFieldName + std::to_string(i), value);
+        headerFormat.appendField({optionName + optionValProtFieldName + std::to_string(i), lenValueBits});
+        headerFormat.setFieldValue(optionName + optionValProtFieldName + std::to_string(i), value);
     }
 
     appendNopOptions(optionsParams.at(option));
@@ -324,7 +327,7 @@ bool TcpHeader::setOptionValues(Options option, const OptionValues& values)
 
     for(uint32_t i = 0; i < values.size(); i++){
         const auto currValue = values.at(i).value;
-        tcpHeaderFormat.setFieldValue(nameOption + optionValProtFieldName + std::to_string(i), currValue);
+        headerFormat.setFieldValue(nameOption + optionValProtFieldName + std::to_string(i), currValue);
     }
 
     return true;
@@ -357,6 +360,7 @@ std::string TcpHeader::getOptionsAsText() const
 
 uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint32_t buffByteSize) const
 {
+    // RFC1071
     // Compute Internet Checksum for "buffSize" bytes
     // beginning at location "buff".
 
@@ -395,8 +399,8 @@ void TcpHeader::appendNopOptions(const OptionData& option)
     const int amountNOP = nearDivWithoutRemainder - optionLenBytes;
 
     for(int i = 0; i < amountNOP; i++){
-        tcpHeaderFormat.appendField({"nop_" + std::to_string(i) + "_" + optionName, bitSize<uint8_t>()});
-        tcpHeaderFormat.setFieldValue("nop_" + std::to_string(i) + "_" + optionName, static_cast<uint8_t>(Options::NOP));
+        headerFormat.appendField({"nop_" + std::to_string(i) + "_" + optionName, bitSize<uint8_t>()});
+        headerFormat.setFieldValue("nop_" + std::to_string(i) + "_" + optionName, static_cast<uint8_t>(Options::NOP));
     }
 }
 
@@ -404,11 +408,11 @@ void TcpHeader::appendEndOptionsBytes()
 {
     optionsFilled = true;
 
-    if(tcpHeaderFormat.getLength() < maxTcpHeaderLenBytes)
+    if(headerFormat.getLength() < maxTcpHeaderLenBytes)
     {
         //Если это была последняя опция и в заголовке еще есть место, добавляем опцию конца списка опций и Padding, выравнивая заголовок до конца 32-битного слова
-        tcpHeaderFormat.appendField({optionsParams.at(Options::EndOptions).second, bitSize<uint32_t>()});
-        tcpHeaderFormat.setFieldValue(optionsParams.at(Options::EndOptions).second, static_cast<uint8_t>(Options::EndOptions));
+        headerFormat.appendField({optionsParams.at(Options::EndOptions).second, bitSize<uint32_t>()});
+        headerFormat.setFieldValue(optionsParams.at(Options::EndOptions).second, static_cast<uint8_t>(Options::EndOptions));
     }
 }
 
@@ -425,7 +429,7 @@ int TcpHeader::calcNearDivisibleWithoutRemainder(int value, int delimeter)
 
 void TcpHeader::updateChkSum(const std::shared_ptr<char[]>& payload, uint32_t lenTcpPacket)
 {
-    tcpHeaderFormat.setFieldValue("chksum", calcCheckSum(srcIp, dstIp, payload, lenTcpPacket));
+    headerFormat.setFieldValue("chksum", calcCheckSum(srcIp, dstIp, payload, lenTcpPacket));
 }
 
 uint32_t TcpHeader::generateRandomNumber() const
@@ -437,9 +441,9 @@ uint32_t TcpHeader::generateRandomNumber() const
     return dist(engine);
 }
 
-TcpHeader::PseudoTcpHeader::PseudoTcpHeader(uint32_t ipSource, uint32_t ipDestination, uint16_t tcpPacketLengthBytes):
-    srcIp{ipSource}, dstIp{ipDestination},
-    protoId{htons(6)}, tcpByteLen{htons(tcpPacketLengthBytes)}
-{}
+uint32_t TcpHeader::maxPayloadLengthBytes() const
+{
+    return maxTransportPacketLenBytes - TcpHeader::maxTcpHeaderLenBytes; // = 1420 байт, 355 слов (4 байта)
+}
 
 }

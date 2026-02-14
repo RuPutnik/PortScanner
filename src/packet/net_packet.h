@@ -1,0 +1,117 @@
+#ifndef NET_PACKET_H
+#define NET_PACKET_H
+
+#include <cstdint>
+#include <memory>
+#include <string.h>
+
+#include <QString>
+#include <QDebug>
+
+namespace network {
+
+template<class H>
+class NetPacket
+{
+public:
+    NetPacket(H header_, std::shared_ptr<char[]> payload_, uint32_t amountBytes):
+        header{std::move(header_)}, payload{payload_}, lengthPayload{amountBytes}
+    {}
+
+    NetPacket(H header_, const std::string& payload_):
+        header{std::move(header_)}
+    {
+        setPayload(payload_);
+    }
+
+    NetPacket(H header_):
+        header{std::move(header_)},
+        payload{nullptr},
+        lengthPayload{0}
+    {}
+
+    NetPacket(const NetPacket&) = default;
+    NetPacket(NetPacket&&) = default;
+
+    NetPacket& operator=(const NetPacket&) noexcept = default;
+    NetPacket& operator=(NetPacket&&) noexcept = default;
+
+    uint32_t getBytesLength()
+    {
+        return header.lengthBytes() + lengthPayload;
+    }
+
+    std::unique_ptr<const char[]> getData()
+    {
+        //Создаем массив размером в длину сегмента в байтах
+        char* const tcpPacketBuffer = new char[getBytesLength()];
+
+        //Преобразуем порядок байт данных в сетевой (BigEndian)
+        const auto payloadBigEndian = reverseByteOrder(payload.get(), lengthPayload);
+
+        //Выполняем доформирование заголовка (высчитывает контрольную сумму) и копируем результат в общий буфер
+        const auto completeHeaderData = header.generateCompleteHeader(payloadBigEndian, lengthPayload);
+        memcpy(tcpPacketBuffer, completeHeaderData.get(), header.lengthBytes());
+        memcpy(tcpPacketBuffer + header.lengthBytes(), payloadBigEndian.get(), lengthPayload);
+
+        return std::unique_ptr<const char[]>(tcpPacketBuffer);
+    }
+
+    void setPayload(const std::shared_ptr<char[]>& newPayload, uint32_t amountBytes)
+    {
+        payload = newPayload;
+        lengthPayload = amountBytes;
+    }
+
+    void setPayload(const std::string& newPayload)
+    {
+        lengthPayload = static_cast<uint32_t>(newPayload.length() + 1);
+        char* copiedPayload = new char[lengthPayload];
+        memcpy(copiedPayload, newPayload.c_str(), lengthPayload);
+
+        payload = std::shared_ptr<char[]>(copiedPayload);
+    }
+
+    void debugPayload() const
+    {
+        //TODO Проверить
+        QString word;
+        for(int i = 0; i < lengthPayload; i++){
+            word += QString::number(payload[i], 16).rightJustified(2, '0');
+            if((i+1) % 4 == 0) {
+                qDebug().noquote() << "0x" + word;
+                word.clear();
+            }
+        }
+        qDebug() << "\n";
+    }
+
+    void debugHex() const
+    {
+        header.debugHex();
+        debugPayload();
+    }
+
+    void debugBin() const
+    {
+        header.debugBin();
+        debugPayload();
+    }
+
+private:
+    H header;
+    std::shared_ptr<char[]> payload;
+    uint32_t lengthPayload;
+
+    std::shared_ptr<char[]> reverseByteOrder(char *data, uint32_t lenBytes) const
+    {
+        const std::shared_ptr<char[]> reversedData{new char[lenBytes]};
+        std::reverse_copy(data, data + lenBytes, reversedData.get());
+
+        return reversedData;
+    }
+};
+
+}
+
+#endif // NET_PACKET_H

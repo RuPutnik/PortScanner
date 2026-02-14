@@ -2,7 +2,8 @@
 
 namespace network {
 
-IcmpHeader::IcmpHeader()
+IcmpHeader::IcmpHeader():
+    IHeader{{}}
 {
 
 }
