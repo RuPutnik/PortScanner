@@ -8,12 +8,9 @@
 #include "i_header.h"
 
 namespace network {
-template<class H>
-class NetPacket;
 
 class TcpHeader final : public IHeader
 {
-    friend class NetPacket<TcpHeader>;
 public:
     enum Flags
     {
@@ -122,7 +119,6 @@ private:
     std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes) override;
 
     //Полезная нагрузка TCP пакета участвует в подсчете КС помимо полей заголовка
-    void updateChkSum(const std::shared_ptr<char[]>& payload, uint32_t lenTcpPacket);
     bool containsOption(Options opt) const;
     void appendNopOptions(const OptionData& option);
     void appendEndOptionsBytes();

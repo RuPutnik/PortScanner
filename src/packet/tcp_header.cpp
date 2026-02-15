@@ -36,7 +36,7 @@ TcpHeader::TcpHeader(uint32_t sourceIp, uint32_t destinationIp):
 
 std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes)
 {
-    updateChkSum(payload, payloadLenBytes);
+    headerFormat.setFieldValue("chksum", calcCheckSum(payload, payloadLenBytes));
 
     char* const rawDataHeader = new char[lengthBytes()];
 
@@ -375,11 +375,6 @@ int TcpHeader::calcNearDivisibleWithoutRemainder(int value, int delimeter)
     }
 
     return nearestDivisible;
-}
-
-void TcpHeader::updateChkSum(const std::shared_ptr<char[]>& payload, uint32_t lenTcpPacket)
-{
-    headerFormat.setFieldValue("chksum", calcCheckSum(payload, lenTcpPacket));
 }
 
 uint32_t TcpHeader::maxPayloadLengthBytes() const
