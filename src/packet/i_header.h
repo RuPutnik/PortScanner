@@ -35,6 +35,7 @@ protected:
     };
 
     kivk_lib::Protocol headerFormat;
+    std::optional<std::pair<uint32_t, uint32_t>> ipAdresses; //sourceIp, destinationIp
 
     template<class ResType>
     ResType generateRandomNumber() const
@@ -49,7 +50,6 @@ private:
     uint16_t calcCheckSum_(uint16_t *buff, uint32_t buffByteSize) const;
     bool isSetIpAdresses() const;
 
-    std::optional<std::pair<uint32_t, uint32_t>> ipAdresses; //sourceIp, destinationIp
 };
 
 #endif // I_HEADER_H

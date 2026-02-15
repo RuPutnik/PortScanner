@@ -86,6 +86,10 @@ void UdpHeader::debugBin() const
 
 std::unique_ptr<const char[]> UdpHeader::generateCompleteHeader([[maybe_unused]] const std::shared_ptr<char[]>& payload, [[maybe_unused]] uint32_t payloadLenBytes)
 {
+    if(ipAdresses.has_value()){
+        headerFormat.setFieldValue("chksum", calcCheckSum(payload, payloadLenBytes));
+    }
+
     char* const rawDataHeader = new char[lengthBytes()];
 
     memcpy(rawDataHeader, headerFormat.getInternalBuffer(), lengthBytes());

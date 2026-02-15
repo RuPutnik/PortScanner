@@ -148,7 +148,7 @@ int main(int argc, char** argv)
 {
     //QCoreApplication a(argc, argv);
 
-    const int fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    const int fd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
     if(fd < 0){
         perror("Error create raw socket");
         return errno;
@@ -198,15 +198,15 @@ int main(int argc, char** argv)
    // const auto headerData = tcpHeader.generateCompleteHeader({}, 0);
     //std::jthread listenThread{&rawListener};
     //std::jthread fakeListenThread{&fakeListener};
-    UdpHeader udpHead;
+    UdpHeader udpHead{sourceAddress.s_addr, targetAddress.s_addr};
     udpHead.setSrcPort(48000);
     udpHead.setDstPort(80);
     udpHead.setPayloadBytesLength(0);
 
     udpHead.debugHex();
 
-    //network::NetPacket<UdpHeader> udpPack{std::move(udpHead)};
-    //const auto udpData = udpPack.getData();
+    network::NetPacket<UdpHeader> udpPack{std::move(udpHead)};
+    const auto udpData = udpPack.getData();
 
     //udpPack.debugHex();
 
@@ -227,11 +227,11 @@ int main(int argc, char** argv)
         //if (sendto(fd, headerData.get(), tcpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
         //    perror("packet send error:");
 
-        //if (sendto(fd, udpData.get(), udpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
-        //    perror("packet send error:");
+        if (sendto(fd, udpData.get(), udpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
+            perror("packet send error:");
 
-        if (sendto(fd, icmpData.get(), icmpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
-           perror("packet send error:");
+        //if (sendto(fd, icmpData.get(), icmpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
+        //   perror("packet send error:");
     }
 
 
