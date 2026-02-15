@@ -11,7 +11,8 @@ namespace network {
 enum class PACKET_TYPE
 {
     ICMP = IPPROTO_ICMP,
-    TCP = IPPROTO_TCP
+    TCP = IPPROTO_TCP,
+    UDP = IPPROTO_UDP
 };
 
 template<class H>

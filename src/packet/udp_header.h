@@ -3,12 +3,16 @@
 
 #include "i_header.h"
 
+namespace network
+{
+
 class UdpHeader final : public IHeader
 {
 public:
     const static inline uint32_t maxUdpHeaderLenBytes = 8;
 
     UdpHeader();
+    UdpHeader(uint32_t sourceIp, uint32_t destinationIp);
 
     std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]> &payload, uint32_t payloadLenBytes) override;
 
@@ -28,7 +32,10 @@ public:
 
     void debugHex() const override;
     void debugBin() const override;
+    uint16_t getProtoId() const override;
 
 };
+
+}
 
 #endif // UDP_HEADER_H

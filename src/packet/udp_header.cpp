@@ -2,8 +2,17 @@
 
 #include <QDebug>
 
+namespace network {
+
 UdpHeader::UdpHeader():
-    IHeader{{{
+    IHeader{std::nullopt, {{
+        {"srcPort", 16}, {"dstPort", 16},
+        {"packetBytesLength", 16}, {"chksum", 16}
+    }}}
+{}
+
+UdpHeader::UdpHeader(uint32_t sourceIp, uint32_t destinationIp):
+    IHeader{std::pair{sourceIp, destinationIp}, {{
         {"srcPort", 16}, {"dstPort", 16},
         {"packetBytesLength", 16}, {"chksum", 16}
     }}}
@@ -82,4 +91,11 @@ std::unique_ptr<const char[]> UdpHeader::generateCompleteHeader([[maybe_unused]]
     memcpy(rawDataHeader, headerFormat.getInternalBuffer(), lengthBytes());
 
     return std::unique_ptr<const char[]>{rawDataHeader};
+}
+
+uint16_t UdpHeader::getProtoId() const
+{
+    return IPPROTO_UDP;
+}
+
 }

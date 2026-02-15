@@ -100,10 +100,9 @@ public:
 
     std::string getOptionsAsText() const;
     uint32_t maxPayloadLengthBytes() const override;
+    uint16_t getProtoId() const override;
 
 private:
-
-
     using OptionData = std::pair<int32_t, std::string>; //Размер в байтах, текстовое название
 
     const static inline uint32_t bitLenOptionId = static_cast<uint32_t>(bitSize<uint8_t>()); //Длина в битах поля с кодом опции
@@ -115,8 +114,6 @@ private:
     constexpr static inline uint16_t defaultWindowSize = std::numeric_limits<uint16_t>::max();
     const static std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> optionsParams;
 
-    uint32_t srcIp;
-    uint32_t dstIp;
     std::unordered_map<TcpHeader::Options, OptionValues> headerOptions;
     bool optionsFilled;
 
@@ -126,9 +123,6 @@ private:
 
     //Полезная нагрузка TCP пакета участвует в подсчете КС помимо полей заголовка
     void updateChkSum(const std::shared_ptr<char[]>& payload, uint32_t lenTcpPacket);
-    uint32_t generateRandomNumber() const;   
-    uint16_t calcCheckSum(uint32_t srcIp, uint32_t dstIp, const std::shared_ptr<char[]>& payloadTcp, uint32_t tcpPayloadLenBytes) const;
-    uint16_t calcCheckSum_(uint16_t* buff, uint32_t buffByteSize) const;
     bool containsOption(Options opt) const;
     void appendNopOptions(const OptionData& option);
     void appendEndOptionsBytes();

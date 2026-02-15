@@ -11,6 +11,7 @@
 #include "packet/tcp_header.h"
 #include "packet/udp_header.h"
 #include "packet/net_packet.h"
+#include "packet/icmp_header.h"
 
 using namespace network;
 
@@ -76,7 +77,7 @@ void rawListener()
             usleep(10 * 1000);
         }
 }
-
+/*
 void fakeListener()
 {
     const int fdListener = socket(AF_INET, SOCK_STREAM, 0);
@@ -117,7 +118,7 @@ void fakeListener()
 
         qDebug() << "accepted";
 
-       /* while(true)
+        while(true)
         {
             const auto amountBytes = recvfrom(fdListener, buff, sizeMsg, 0, reinterpret_cast<sockaddr*>(&incAddr), &len);
             if(amountBytes <= 0){
@@ -137,17 +138,17 @@ void fakeListener()
                 std::cout.flush();
             }
             std::cout << "\n";
-        }*/
+        }
 
         usleep(10 * 1000);
     }
 }
-
+*/
 int main(int argc, char** argv)
 {
     //QCoreApplication a(argc, argv);
 
-    const int fd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+    const int fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if(fd < 0){
         perror("Error create raw socket");
         return errno;
@@ -192,8 +193,8 @@ int main(int argc, char** argv)
     qDebug() << "SYN" << tcpHeader.isSyn();
     qDebug() << "FIN" << tcpHeader.isFin();
 
-    network::NetPacket<TcpHeader> tcpPack{std::move(tcpHeader)};
-    const auto headerData = tcpPack.getData();
+   // network::NetPacket<TcpHeader> tcpPack{std::move(tcpHeader)};
+   // const auto headerData = tcpPack.getData();
    // const auto headerData = tcpHeader.generateCompleteHeader({}, 0);
     //std::jthread listenThread{&rawListener};
     //std::jthread fakeListenThread{&fakeListener};
@@ -204,10 +205,19 @@ int main(int argc, char** argv)
 
     udpHead.debugHex();
 
-    network::NetPacket<UdpHeader> udpPack{std::move(udpHead)};
-    const auto udpData = udpPack.getData();
+    //network::NetPacket<UdpHeader> udpPack{std::move(udpHead)};
+    //const auto udpData = udpPack.getData();
 
-    udpPack.debugHex();
+    //udpPack.debugHex();
+
+    IcmpHeader icmpHeader{IcmpHeader::Type::EchoRequest};
+   // icmpHeader.setSeqNumber(0);
+   // icmpHeader.setCode(0);
+
+    network::NetPacket<IcmpHeader> icmpPack{std::move(icmpHeader)};
+
+
+    const auto icmpData = icmpPack.getData();
 
     sleep(1);
     qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";
@@ -217,8 +227,11 @@ int main(int argc, char** argv)
         //if (sendto(fd, headerData.get(), tcpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
         //    perror("packet send error:");
 
-        if (sendto(fd, udpData.get(), udpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
-            perror("packet send error:");
+        //if (sendto(fd, udpData.get(), udpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
+        //    perror("packet send error:");
+
+        if (sendto(fd, icmpData.get(), icmpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
+           perror("packet send error:");
     }
 
 

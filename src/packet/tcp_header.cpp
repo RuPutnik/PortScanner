@@ -4,8 +4,6 @@
 
 #include <netinet/in.h>
 #include <memory>
-#include <random>
-#include <chrono>
 
 namespace network {
 
@@ -22,18 +20,16 @@ const std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> TcpHeader::o
 };
 
 TcpHeader::TcpHeader(uint32_t sourceIp, uint32_t destinationIp):
-    IHeader{{{
-        {"srcPort", 16}, {"dstPort", 16},
+    IHeader{std::pair{sourceIp, destinationIp}, {{
+            {"srcPort", 16}, {"dstPort", 16},
             {"seqNumber", 32},
             {"ackNumber", 32},
             {"headerLength", 4}, {"reserver", 6}, {"urg", 1}, {"ack", 1}, {"psh", 1}, {"rst", 1}, {"syn", 1}, {"fin", 1}, {"windowSize", 16},
             {"chksum", 16}, {"urgent", 16}
         }}},
-    srcIp{sourceIp},
-    dstIp{destinationIp},
     optionsFilled{false}
 {
-    setSeqNumber(generateRandomNumber());
+    setSeqNumber(generateRandomNumber<uint32_t>());
     setWindowSize(defaultWindowSize);
     setHdrLen(static_cast<uint8_t>(lengthBytes() / sizeof(int32_t)));
 }
@@ -238,26 +234,6 @@ void TcpHeader::debugBin() const
     qDebug().noquote() << "-------------------------------------------";
 }
 
-uint16_t TcpHeader::calcCheckSum(uint32_t srcIp, uint32_t dstIp, const std::shared_ptr<char[]>& payloadTcp, uint32_t tcpPayloadLenBytes) const
-{
-    const uint32_t tcpPacketTotalLenBytes = lengthBytes() + tcpPayloadLenBytes;
-
-    //TODO Учитывать данные пакета при расчете КС
-    const PseudoIpHeader pseudoHeader{srcIp, dstIp, static_cast<uint16_t>(tcpPacketTotalLenBytes)}; //Преобразование важно, т.к. в PseudoTcpHeader поле длины занимает 2 байта
-
-    const uint32_t lenBytesBuffDataPacket = sizeof(PseudoIpHeader) + tcpPacketTotalLenBytes;
-
-    //Здесь будут храниться псевдозаголовок TCP, настоящий заголовок TCP, а также полезная нагрузка TCP пакета
-    const std::unique_ptr<uint16_t[]> buffDataPacket{new uint16_t[lenBytesBuffDataPacket / 2]};
-
-    memcpy(buffDataPacket.get(), &pseudoHeader, sizeof(PseudoIpHeader));
-    //Преобразуем к char* т.к. нам нужно сместиться на размер PseudoTcpHeader в байтах
-    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizeof(PseudoIpHeader), headerFormat.getInternalBuffer(), lengthBytes());
-    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizeof(PseudoIpHeader) + lengthBytes(), payloadTcp.get(), tcpPayloadLenBytes);
-
-    return htons(calcCheckSum_(buffDataPacket.get(), lenBytesBuffDataPacket));
-}
-
 bool TcpHeader::addOption(Options option, const OptionValues& values, bool lastOption)
 {
     if(optionsFilled){
@@ -358,32 +334,6 @@ std::string TcpHeader::getOptionsAsText() const
     return totalOptionsLine;
 }
 
-uint16_t TcpHeader::calcCheckSum_(uint16_t* buff, uint32_t buffByteSize) const
-{
-    // RFC1071
-    // Compute Internet Checksum for "buffSize" bytes
-    // beginning at location "buff".
-
-    int32_t sum = 0;
-
-    while(buffByteSize > 1)  {
-        sum += *(buff++);
-        buffByteSize -= 2;
-    }
-
-    // Add left-over byte, if any
-    if(buffByteSize > 0){
-        sum += * (unsigned char *) buff;
-    }
-
-    // Fold 32-bit sum to 16 bits
-    while(sum >> 16){
-        sum = (sum & 0xffff) + (sum >> 16);
-    }
-
-    return static_cast<uint16_t>(~sum);
-}
-
 bool TcpHeader::containsOption(Options opt) const
 {
     return headerOptions.find(opt) != headerOptions.end();
@@ -429,21 +379,17 @@ int TcpHeader::calcNearDivisibleWithoutRemainder(int value, int delimeter)
 
 void TcpHeader::updateChkSum(const std::shared_ptr<char[]>& payload, uint32_t lenTcpPacket)
 {
-    headerFormat.setFieldValue("chksum", calcCheckSum(srcIp, dstIp, payload, lenTcpPacket));
-}
-
-uint32_t TcpHeader::generateRandomNumber() const
-{
-    const auto time_since_epoch = std::chrono::steady_clock::now().time_since_epoch();
-    std::mt19937 engine;
-    engine.seed(static_cast<uint32_t>(time_since_epoch.count()));
-    std::uniform_int_distribution<uint32_t> dist{1};
-    return dist(engine);
+    headerFormat.setFieldValue("chksum", calcCheckSum(payload, lenTcpPacket));
 }
 
 uint32_t TcpHeader::maxPayloadLengthBytes() const
 {
     return maxTransportPacketLenBytes - TcpHeader::maxTcpHeaderLenBytes; // = 1420 байт, 355 слов (4 байта)
+}
+
+uint16_t TcpHeader::getProtoId() const
+{
+    return IPPROTO_TCP;
 }
 
 }
