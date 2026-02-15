@@ -1,4 +1,5 @@
 #include "icmp_header.h"
+#include <sys/time.h>
 
 namespace network {
 
@@ -9,7 +10,24 @@ IcmpHeader::IcmpHeader(Type type):
     }}}
 {
     setType(type);
+    setCode(0);
     setIdentifier(generateRandomNumber<uint16_t>());
+
+    switch (type) {
+    case Type::EchoRequest:{
+        headerFormat.appendField({"timestamp1", bitSize<__time_t>()});
+        headerFormat.appendField({"timestamp2", bitSize<__suseconds_t>()});
+
+        const timeval tv = getTimestampLabel();
+
+        headerFormat.setFieldValue("timestamp1", tv.tv_sec);
+        headerFormat.setFieldValue("timestamp2", tv.tv_usec);
+
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 std::unique_ptr<const char[]> network::IcmpHeader::generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes)
@@ -91,6 +109,125 @@ void IcmpHeader::setSeqNumber(uint16_t seqNumber)
 uint16_t IcmpHeader::getProtoId() const
 {
     return IPPROTO_ICMP;
+}
+
+std::string IcmpHeader::getTextCode() const
+{
+    switch (getType())
+    {
+    case Type::EchoReply:
+        if(getCode()){
+            return "Эхо-ответ";
+        }
+        break;
+    case Type::UnreachableDestNode:
+        switch(getCode()){
+        case 0:
+            return "Сеть недостижима";
+        case 1:
+            return "Узел недостижим";
+        case 2:
+            return "Протокол недостижим";
+        case 3:
+            return "Порт недостижим";
+        case 4:
+            return "Необходима фрагментация, но установлен флаг её запрета (DF)";
+        case 5:
+            return "Неверный маршрут от источника";
+        case 6:
+            return "Сеть назначения неизвестна";
+        case 7:
+            return "Узел назначения неизвестен";
+        case 8:
+            return "Узел-источник изолирован";
+        case 9:
+            return "Сеть административно запрещена";
+        case 10:
+            return "Узел административно запрещен";
+        case 11:
+            return "Сеть недоступна для ToS";
+        case 12:
+            return "Узел недоступен для Tos";
+        case 13:
+            return "Коммуникации административно запрещены";
+        case 14:
+            return "Нарушение порядка предпочтения узлов";
+        case 15:
+            return "Активно отсечение порядка предпочтения";
+        }
+        break;
+    case Type::SourceSuppression:
+        if(getCode() == 0){
+            return "Сдерживание источника";
+        }
+        break;
+    case Type::RouteRedirection:
+        switch (getCode()) {
+        case 0:
+            return "Перенаправление пакетов в сеть";
+        case 1:
+            return "Перенаправление пакетов к узлу";
+        case 2:
+            return "Перенаправление для каждого типа обслуживания (ToS)";
+        case 3:
+            return "Перенаправление пакета к узлу для каждого типа обслуживания";
+        }
+        break;
+    case Type::EchoRequest:
+        if(getCode() == 0){
+            return "Эхо-запрос";
+        }
+        break;
+    case Type::TimeExceeded:
+        switch (getCode()) {
+        case 0:
+            return "Время жизни пакета (TTL) истекло при транспортировке";
+        case 1:
+            return "Время жизни пакета истекло при сборке фрагментов";
+        }
+        break;
+    case Type::ParameterProblem:
+        switch (getCode()) {
+        case 0:
+            return "Указатель говорит об ошибке";
+        case 1:
+            return "Отсутствует требуемая опция";
+        case 2:
+            return "Некорректная длина";
+        }
+        break;
+    case Type::TimestampRequest:
+        if(getCode() == 0){
+            return "Запрос метки времени";
+        }
+        break;
+    case Type::TimestampReply:
+        if(getCode() == 0){
+            return "Ответ с меткой времени";
+        }
+        break;
+    case Type::InfoRequest:
+        if(getCode() == 0){
+            return "Информационный запрос";
+        }
+        break;
+    case Type::InfoReply:
+        if(getCode() == 0){
+            return "Информационный ответ";
+        }
+        break;
+    }
+
+    return "";
+}
+
+timeval IcmpHeader::getTimestampLabel()
+{
+    timeval tv{0, 0};
+
+    gettimeofday(&tv, nullptr);
+
+    return tv;
 }
 
 }

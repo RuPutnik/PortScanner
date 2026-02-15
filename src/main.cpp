@@ -148,7 +148,7 @@ int main(int argc, char** argv)
 {
     //QCoreApplication a(argc, argv);
 
-    const int fd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+    const int fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if(fd < 0){
         perror("Error create raw socket");
         return errno;
@@ -215,7 +215,7 @@ int main(int argc, char** argv)
    // icmpHeader.setCode(0);
 
     network::NetPacket<IcmpHeader> icmpPack{std::move(icmpHeader)};
-
+    //icmpPack.setPayload()
 
     const auto icmpData = icmpPack.getData();
 
@@ -227,11 +227,11 @@ int main(int argc, char** argv)
         //if (sendto(fd, headerData.get(), tcpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
         //    perror("packet send error:");
 
-        if (sendto(fd, udpData.get(), udpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
-            perror("packet send error:");
+       // if (sendto(fd, udpData.get(), udpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
+       //     perror("packet send error:");
 
-        //if (sendto(fd, icmpData.get(), icmpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
-        //   perror("packet send error:");
+        if (sendto(fd, icmpData.get(), icmpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
+           perror("packet send error:");
     }
 
 

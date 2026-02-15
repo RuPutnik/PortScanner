@@ -46,6 +46,9 @@ public:
     void setSeqNumber(uint16_t seqNumber);
 
     uint16_t getProtoId() const override;
+    std::string getTextCode() const;
+
+    timeval getTimestampLabel();
 };
 
 }
