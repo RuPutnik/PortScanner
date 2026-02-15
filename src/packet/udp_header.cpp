@@ -76,7 +76,6 @@ void UdpHeader::debugHex() const
 void UdpHeader::debugBin() const
 {
     qDebug().noquote() << "---------------UDP----HEADER---------------";
-
     qDebug().noquote() << "    SOURCE PORT         DEST PORT ";
     qDebug().noquote() << "0b" + QString::number(getSrcPort(), 2).rightJustified(16, '0') + " 0b" + QString::number(getDstPort(), 2).rightJustified(16, '0');
     qDebug().noquote() << "    LENGTH PACKET      CHECK SUMM ";

@@ -183,8 +183,8 @@ int main(int argc, char** argv)
 //    tcpHeader.addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT8, 7}});
 
     qDebug().noquote() << tcpHeader.getOptionsAsText();
-    tcpHeader.debugHex();
-    tcpHeader.debugBin();
+    //tcpHeader.debugHex();
+    //tcpHeader.debugBin();
 
     qDebug() << "URG" << tcpHeader.isUrg();
     qDebug() << "ACK" << tcpHeader.isAck();
@@ -203,7 +203,7 @@ int main(int argc, char** argv)
     udpHead.setDstPort(80);
     udpHead.setPayloadBytesLength(0);
 
-    udpHead.debugHex();
+    //udpHead.debugHex();
 
     network::NetPacket<UdpHeader> udpPack{std::move(udpHead)};
     const auto udpData = udpPack.getData();
@@ -215,9 +215,12 @@ int main(int argc, char** argv)
    // icmpHeader.setCode(0);
 
     network::NetPacket<IcmpHeader> icmpPack{std::move(icmpHeader)};
-    //icmpPack.setPayload()
+    std::string data{"ababab"};
+    icmpPack.setPayload(std::move(data));
 
     const auto icmpData = icmpPack.getData();
+
+    icmpPack.debugBin();
 
     sleep(1);
     qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";

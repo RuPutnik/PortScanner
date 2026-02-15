@@ -63,27 +63,34 @@ public:
         lengthPayload = amountBytes;
     }
 
-    void setPayload(const std::string& newPayload)
+    void setPayload(std::string newPayload)
     {
         lengthPayload = static_cast<uint32_t>(newPayload.length() + 1);
-        char* copiedPayload = new char[lengthPayload];
-        memcpy(copiedPayload, newPayload.c_str(), lengthPayload);
 
+        char* copiedPayload = new char[lengthPayload];
+
+        #if __BYTE_ORDER == __LITTLE_ENDIAN
+            copiedPayload[0] = 0;
+            std::ranges::reverse(newPayload);
+            memcpy(copiedPayload + 1, newPayload.c_str(), lengthPayload - 1);
+        #else
+            memcpy(copiedPayload, newPayload.c_str(), lengthPayload);
+        #endif
         payload = std::shared_ptr<char[]>(copiedPayload);
     }
 
     void debugPayload() const
     {
-        //TODO Проверить
+        qDebug().noquote() << "---Payload---";
         QString word;
         for(int i = 0; i < lengthPayload; i++){
             word += QString::number(payload[i], 16).rightJustified(2, '0');
-            if((i+1) % 4 == 0) {
+            if((i+1) % 4 == 0 || i == lengthPayload - 1) {
                 qDebug().noquote() << "0x" + word;
                 word.clear();
             }
         }
-        qDebug() << "\n";
+        qDebug().noquote() << "-------------";
     }
 
     void debugHex() const

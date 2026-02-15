@@ -28,7 +28,7 @@ uint16_t IHeader::calcCheckSum(const std::shared_ptr<char[]>& payloadPacket, uin
 
     const uint32_t sizePseudoHeader = isSetIpAdresses() ? sizeof(PseudoIpHeader) : 0; //Если адреса не заданы, то использовать псевдо заголовок IP не нужно
 
-    const uint32_t lenBytesBuffDataPacket = sizePseudoHeader + packetTotalLenBytes; //TODO Для ICMP псевдозаголовок не участвует в подсчете КС, нужно что то думать...
+    const uint32_t lenBytesBuffDataPacket = sizePseudoHeader + packetTotalLenBytes;
 
     //Здесь будут храниться псевдозаголовок IP, настоящий заголовок пакета, а также полезная нагрузка пакета
     const std::unique_ptr<uint16_t[]> buffDataPacket{new uint16_t[lenBytesBuffDataPacket / 2]};
