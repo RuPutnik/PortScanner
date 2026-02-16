@@ -13,6 +13,8 @@
 #include "packet/net_packet.h"
 #include "packet/icmp_header.h"
 
+#include "sr.h"
+
 using namespace network;
 
 constexpr const char* sourceIP = "10.0.2.15";//"10.0.2.15";
@@ -167,12 +169,6 @@ int main(int argc, char** argv)
         return errno;
     }
 
-    sockaddr_in sourceAddr{AF_INET, 0, sourceAddress, {0}};
-    sockaddr_in destAddr{AF_INET, 0, targetAddress, {0}};
-
-    memset(sourceAddr.sin_zero, 0, sizeof(sourceAddr.sin_zero));
-    memset(destAddr.sin_zero, 0, sizeof(destAddr.sin_zero));
-
     TcpHeader tcpHeader{sourceAddress.s_addr, targetAddress.s_addr};
     tcpHeader.setSrcPort(48000);
     tcpHeader.setDstPort(80);
@@ -194,8 +190,6 @@ int main(int argc, char** argv)
     qDebug() << "FIN" << tcpHeader.isFin();
 
    // network::NetPacket<TcpHeader> tcpPack{std::move(tcpHeader)};
-   // const auto headerData = tcpPack.getData();
-   // const auto headerData = tcpHeader.generateCompleteHeader({}, 0);
     //std::jthread listenThread{&rawListener};
     //std::jthread fakeListenThread{&fakeListener};
     UdpHeader udpHead{sourceAddress.s_addr, targetAddress.s_addr};
@@ -206,19 +200,13 @@ int main(int argc, char** argv)
     //udpHead.debugHex();
 
     network::NetPacket<UdpHeader> udpPack{std::move(udpHead)};
-    const auto udpData = udpPack.getData();
 
     //udpPack.debugHex();
 
     IcmpHeader icmpHeader{IcmpHeader::Type::EchoRequest};
-   // icmpHeader.setSeqNumber(0);
-   // icmpHeader.setCode(0);
 
     network::NetPacket<IcmpHeader> icmpPack{std::move(icmpHeader)};
-    std::string data{"ababab"};
-    icmpPack.setPayload(std::move(data));
-
-    const auto icmpData = icmpPack.getData();
+    icmpPack.setPayload(std::string{"This is ICMP-Tunnel!!!"});
 
     icmpPack.debugBin();
 
@@ -226,15 +214,16 @@ int main(int argc, char** argv)
     qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";
     while(true) {
         sleep(3);
-        // Наш TCP пакет пока что будет состоять только из заголовка (возможно, с опциями), без данных
-        //if (sendto(fd, headerData.get(), tcpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
-        //    perror("packet send error:");
-
-       // if (sendto(fd, udpData.get(), udpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
+       // if(!network::sendPacketTo(fd, tcpPack, destIP).first){
        //     perror("packet send error:");
+       // }
+       // if(!network::sendPacketTo(fd, udpPack, destIP).first){
+       //     perror("packet send error:");
+       // }
 
-        if (sendto(fd, icmpData.get(), icmpPack.getBytesLength(), 0, reinterpret_cast<sockaddr*>(&destAddr), sizeof(destAddr)) < 0)
-           perror("packet send error:");
+        if(!network::sendPacketTo(fd, icmpPack, destIP).first){
+            perror("packet send error:");
+        }
     }
 
 

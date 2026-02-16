@@ -11,6 +11,7 @@
 namespace network {
 
 template<class H>
+//TODO Наложить условия на H с помощью концептов
 class NetPacket
 {
 public:
@@ -36,7 +37,7 @@ public:
     NetPacket& operator=(const NetPacket&) noexcept = default;
     NetPacket& operator=(NetPacket&&) noexcept = default;
 
-    uint32_t getBytesLength()
+    uint32_t getBytesLength() const
     {
         return header.lengthBytes() + lengthPayload;
     }
