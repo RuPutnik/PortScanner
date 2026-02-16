@@ -9,11 +9,23 @@
 
 namespace network {
 
-enum class PACKET_TYPE
+enum class PACKET_TYPE : int
 {
     ICMP = IPPROTO_ICMP,
     TCP = IPPROTO_TCP,
     UDP = IPPROTO_UDP
+};
+
+class Socket
+{
+public:
+    Socket(PACKET_TYPE type);
+    ~Socket();
+
+    int getSocketFd() const;
+
+private:
+    int socketFd;
 };
 
 template<class H>
@@ -37,6 +49,12 @@ std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(int fileDescriptor, Net
     }else{
         return {std::nullopt, errno};
     }
+}
+
+template<class H>
+std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(const Socket& socket, NetPacket<H> packet, const std::string& ipv4Address, int flags = 0)
+{
+    return sendPacketTo(socket.getSocketFd(), std::move(packet), ipv4Address, flags);
 }
 
 }

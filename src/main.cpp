@@ -150,14 +150,6 @@ int main(int argc, char** argv)
 {
     //QCoreApplication a(argc, argv);
 
-    const int fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if(fd < 0){
-        perror("Error create raw socket");
-        return errno;
-    }
-
-    qDebug() << "Создание Raw Socket успешно выполнено";
-
     in_addr sourceAddress, targetAddress;
     if(inet_pton(AF_INET, destIP, &targetAddress.s_addr) < 0){
         perror("Error format IPv4 address");
@@ -189,9 +181,9 @@ int main(int argc, char** argv)
     qDebug() << "SYN" << tcpHeader.isSyn();
     qDebug() << "FIN" << tcpHeader.isFin();
 
-   // network::NetPacket<TcpHeader> tcpPack{std::move(tcpHeader)};
+    network::NetPacket<TcpHeader> tcpPack{std::move(tcpHeader)};
     //std::jthread listenThread{&rawListener};
-    //std::jthread fakeListenThread{&fakeListener};
+
     UdpHeader udpHead{sourceAddress.s_addr, targetAddress.s_addr};
     udpHead.setSrcPort(48000);
     udpHead.setDstPort(80);
@@ -214,14 +206,14 @@ int main(int argc, char** argv)
     qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";
     while(true) {
         sleep(3);
-       // if(!network::sendPacketTo(fd, tcpPack, destIP).first){
+       // if(!network::sendPacketTo(Socket{PACKET_TYPE::TCP}, tcpPack, destIP).first){
        //     perror("packet send error:");
        // }
-       // if(!network::sendPacketTo(fd, udpPack, destIP).first){
+       // if(!network::sendPacketTo(Socket{PACKET_TYPE::UDP}, udpPack, destIP).first){
        //     perror("packet send error:");
        // }
 
-        if(!network::sendPacketTo(fd, icmpPack, destIP).first){
+        if(!network::sendPacketTo(Socket{PACKET_TYPE::ICMP}, icmpPack, destIP).first){
             perror("packet send error:");
         }
     }
