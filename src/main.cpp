@@ -25,59 +25,23 @@ constexpr const char* destIP = "202.181.230.36"; //http://www.hiking.com.hk
 void rawListener()
 {
     qDebug() << "Запущен поток слушателя";
-    const int fdListener = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
-    if(fdListener < 0){
-        perror("Error create raw socket");
-        return;
-    }
 
-    qDebug() << "Создание Raw Socket успешно выполнено";
-    sockaddr_in incomingAddr;
-    incomingAddr.sin_family = AF_INET;
-    incomingAddr.sin_port = htons(48000);
-    incomingAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    const auto printerRawData = [](const std::vector<unsigned char>& vec){
+        qDebug() << "Получено байт: " << vec.size();
+        QString word;
 
-    memset(incomingAddr.sin_zero, 0, sizeof(incomingAddr.sin_zero));
-
-    if(bind(fdListener, reinterpret_cast<sockaddr*>(&incomingAddr), sizeof(incomingAddr)) < 0)
-    {
-        perror("bind");
-        exit(errno);
-    }
-
-  /*  if(listen(fdListener, 1000000) < 0){
-        perror("listen");
-        exit(errno);
-    }*/
-
-    sockaddr_in incAddr;
-    socklen_t len = sizeof(sockaddr);
-    unsigned char buff[1024];
-    size_t sizeMsg = 1024;
-    sockaddr rawAddr;
-
-        while(true)
-        {
-            const auto amountBytes = recvfrom(fdListener, buff, sizeMsg, 0, &rawAddr, &len);
-            if(amountBytes <= 0){
-                qDebug() << "amountBytes = " << amountBytes;
-                break;
+        for(auto i = 0; i < vec.size(); i++){
+            word += QString::number(vec[i], 16).rightJustified(2, '0');
+            if((i+1) % 4 == 0) {
+                qDebug().noquote() << "0x" + word;
+                word.clear();
             }
-            memcpy(&incAddr, &rawAddr, 16);
-            qDebug() << incAddr.sin_addr.s_addr << ":" << incAddr.sin_port;
-            qDebug() << "Получено байт: " << amountBytes;
-            QString word;
-
-            for(int i = 0; i < amountBytes; i++){
-                word += QString::number(buff[i], 16).rightJustified(2, '0');
-                if((i+1) % 4 == 0) {
-                    qDebug().noquote() << "0x" + word;
-                    word.clear();
-                }
-            }
-            qDebug() << "\n";
-            usleep(10 * 1000);
         }
+        qDebug() << "\n";
+    };
+
+    bool b = true;
+    int errCode = network::blockingReadPackets(Socket{PACKET_TYPE::TCP}, printerRawData, b);
 }
 /*
 void fakeListener()
@@ -182,7 +146,7 @@ int main(int argc, char** argv)
     qDebug() << "FIN" << tcpHeader.isFin();
 
     network::NetPacket<TcpHeader> tcpPack{std::move(tcpHeader)};
-    //std::jthread listenThread{&rawListener};
+    std::jthread listenThread{&rawListener};
 
     UdpHeader udpHead{sourceAddress.s_addr, targetAddress.s_addr};
     udpHead.setSrcPort(48000);
@@ -198,7 +162,7 @@ int main(int argc, char** argv)
     IcmpHeader icmpHeader{IcmpHeader::Type::EchoRequest};
 
     network::NetPacket<IcmpHeader> icmpPack{std::move(icmpHeader)};
-    icmpPack.setPayload(std::string{"This is ICMP-Tunnel!!!"});
+    icmpPack.setPayload(std::string{"www.youtube.com"});
 
     icmpPack.debugBin();
 

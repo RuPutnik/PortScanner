@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <linux/if_ether.h>
 
 namespace network {
 
@@ -16,9 +17,8 @@ template<class T>
     return __CHAR_BIT__ * amountBytes;
 }
 
-const inline uint32_t ethernetMTULenBytes = 1500;
 const inline uint32_t ipHeaderLenBytes = 20;
-constexpr static inline uint32_t maxTransportPacketLenBytes = ethernetMTULenBytes - ipHeaderLenBytes;  // = 1480
+constexpr static inline uint32_t maxTransportPacketLenBytes = ETH_DATA_LEN - ipHeaderLenBytes;  // = 1480
 
 }
 

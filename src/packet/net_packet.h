@@ -1,17 +1,20 @@
 #ifndef NET_PACKET_H
 #define NET_PACKET_H
 
-#include <cstdint>
-#include <memory>
-#include <string.h>
-
 #include <QString>
 #include <QDebug>
 
+#include <cstdint>
+#include <memory>
+#include <concepts>
+
+#include <string.h>
+
+#include "i_header.h"
+
 namespace network {
 
-template<class H>
-//TODO Наложить условия на H с помощью концептов
+template<class H> requires std::derived_from<H, IHeader>
 class NetPacket
 {
 public:
