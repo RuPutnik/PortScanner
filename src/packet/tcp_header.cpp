@@ -389,7 +389,7 @@ uint16_t TcpHeader::getProtoId() const
 
 uint32_t TcpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
 {
-
+    //TODO может добавлять доп.поля (опции)
 }
 
 }

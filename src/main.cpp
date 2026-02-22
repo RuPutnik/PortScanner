@@ -17,7 +17,7 @@
 
 using namespace network;
 
-constexpr const char* sourceIP = "10.0.2.15";//"10.0.2.15";
+const char* sourceIP = network::getCurrentIpAddress();//"10.0.2.15";
 //constexpr const char* destIP = "202.181.230.36";
 constexpr const char* destIP = "202.181.230.36"; //http://www.hiking.com.hk
 //constexpr const char* destIP = "185.15.59.224"; //ya.ru
@@ -113,10 +113,10 @@ void fakeListener()
 
 int main(int argc, char** argv)
 {
-    std::string currIp = network::getCurrentIpAddress();
+    qDebug() << sourceIP;
     //QCoreApplication a(argc, argv);
 //
-//    in_addr sourceAddress, targetAddress;
+    in_addr sourceAddress, targetAddress;
 //    if(inet_pton(AF_INET, destIP, &targetAddress.s_addr) < 0){
 //        perror("Error format IPv4 address");
 //        return errno;

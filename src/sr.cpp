@@ -148,13 +148,39 @@ std::optional<NetPacket> IPacketHandler::resolvePacket(std::vector<unsigned char
         packetHeader = std::make_shared<UdpHeader>();
         break;
     case PACKET_TYPE::ICMP:
-        packetHeader = std::make_shared<IcmpHeader>();
+        packetHeader = std::make_shared<IcmpHeader>(IcmpHeader::Type::Unknown);
         break;
     default:
         return std::nullopt;
     }
 
     return NetPacket{packetHeader, incomingNetData};
+}
+
+std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(const Socket &socket, NetPacket packet, const std::string &ipv4Address, int flags)
+{
+    return sendPacketTo(socket.getSocketFd(), std::move(packet), ipv4Address, flags);
+}
+
+std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(int fileDescriptor, NetPacket packet, const std::string &ipv4Address, int flags)
+{
+    in_addr targetAddress;
+    if(inet_pton(AF_INET, ipv4Address.c_str(), &targetAddress.s_addr) < 0){
+        return {std::nullopt, errno};
+    }
+
+    sockaddr_in addr{AF_INET, 0, targetAddress, {0}};
+
+    memset(addr.sin_zero, 0, sizeof(addr.sin_zero));
+
+    const auto packetData = packet.getData();
+    const ssize_t amountBytes = sendto(fileDescriptor, packetData.get(), packet.getBytesLength(), flags, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+
+    if(amountBytes > 0){
+        return {amountBytes, 0};
+    }else{
+        return {std::nullopt, errno};
+    }
 }
 
 }

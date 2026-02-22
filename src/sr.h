@@ -39,31 +39,8 @@ public:
 };
 
 //TODO use std::expected<>
-[[maybe_unused]] std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(int fileDescriptor, NetPacket packet, const std::string& ipv4Address, int flags = 0)
-{
-    in_addr targetAddress;
-    if(inet_pton(AF_INET, ipv4Address.c_str(), &targetAddress.s_addr) < 0){
-        return {std::nullopt, errno};
-    }
-
-    sockaddr_in addr{AF_INET, 0, targetAddress, {0}};
-
-    memset(addr.sin_zero, 0, sizeof(addr.sin_zero));
-
-    const auto packetData = packet.getData();
-    const ssize_t amountBytes = sendto(fileDescriptor, packetData.get(), packet.getBytesLength(), flags, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
-
-    if(amountBytes > 0){
-        return {amountBytes, 0};
-    }else{
-        return {std::nullopt, errno};
-    }
-}
-
-[[maybe_unused]] std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(const Socket& socket, NetPacket packet, const std::string& ipv4Address, int flags = 0)
-{
-    return sendPacketTo(socket.getSocketFd(), std::move(packet), ipv4Address, flags);
-}
+[[maybe_unused]] std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(int fileDescriptor, NetPacket packet, const std::string& ipv4Address, int flags = 0);
+[[maybe_unused]] std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(const Socket& socket, NetPacket packet, const std::string& ipv4Address, int flags = 0);
 
 [[maybe_unused]] std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(int fileDescriptor, int flags = 0);
 [[maybe_unused]] std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(const Socket& socket, int flags = 0);

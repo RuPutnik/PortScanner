@@ -254,7 +254,7 @@ timeval IcmpHeader::getTimestampLabel()
 
 uint32_t IcmpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
 {
-
+    //TODO может добавлять доп.поля (в зависимости от типа пакета)
 }
 
 }
