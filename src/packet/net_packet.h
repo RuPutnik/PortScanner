@@ -6,7 +6,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <concepts>
 
 #include <string.h>
 
@@ -14,25 +13,28 @@
 
 namespace network {
 
-template<class H> requires std::derived_from<H, IHeader>
 class NetPacket
 {
 public:
-    NetPacket(H header_, std::shared_ptr<char[]> payload_, uint32_t amountBytes):
+    NetPacket(std::shared_ptr<IHeader> header_, std::shared_ptr<char[]> payload_, uint32_t amountBytes):
         header{std::move(header_)}, payload{payload_}, lengthPayload{amountBytes}
     {}
 
-    NetPacket(H header_, const std::string& payload_):
+    NetPacket(std::shared_ptr<IHeader> header_, const std::string& payload_):
         header{std::move(header_)}
     {
         setPayload(payload_);
     }
 
-    NetPacket(H header_):
+    NetPacket(std::shared_ptr<IHeader> header_, const std::vector<unsigned char>& data = {}):
         header{std::move(header_)},
         payload{nullptr},
         lengthPayload{0}
-    {}
+    {
+        if(!data.empty()){
+            setData(data);
+        }
+    }
 
     NetPacket(const NetPacket&) = default;
     NetPacket(NetPacket&&) = default;
@@ -42,7 +44,7 @@ public:
 
     uint32_t getBytesLength() const
     {
-        return header.lengthBytes() + lengthPayload;
+        return header->lengthBytes() + lengthPayload;
     }
 
     std::unique_ptr<const char[]> getData()
@@ -54,11 +56,22 @@ public:
         const auto payloadBigEndian = reverseByteOrder(payload.get(), lengthPayload);
 
         //Выполняем доформирование заголовка (высчитывает контрольную сумму) и копируем результат в общий буфер
-        const auto completeHeaderData = header.generateCompleteHeader(payloadBigEndian, lengthPayload);
-        memcpy(tcpPacketBuffer, completeHeaderData.get(), header.lengthBytes());
-        memcpy(tcpPacketBuffer + header.lengthBytes(), payloadBigEndian.get(), lengthPayload);
+        const auto completeHeaderData = header->generateCompleteHeader(payloadBigEndian, lengthPayload);
+        memcpy(tcpPacketBuffer, completeHeaderData.get(), header->lengthBytes());
+        memcpy(tcpPacketBuffer + header->lengthBytes(), payloadBigEndian.get(), lengthPayload);
 
         return std::unique_ptr<const char[]>(tcpPacketBuffer);
+    }
+
+    void setData(const std::vector<unsigned char>& data)
+    {
+        const uint32_t lengthHeaderBytes = header->setHeaderData(data);
+
+        lengthPayload = data.size() - lengthHeaderBytes;
+
+        payload = std::shared_ptr<char[]>(new char[lengthPayload]);
+
+        memcpy(payload.get(), data.data() + lengthHeaderBytes, lengthPayload);
     }
 
     void setPayload(const std::shared_ptr<char[]>& newPayload, uint32_t amountBytes)
@@ -99,18 +112,23 @@ public:
 
     void debugHex() const
     {
-        header.debugHex();
+        header->debugHex();
         debugPayload();
     }
 
     void debugBin() const
     {
-        header.debugBin();
+        header->debugBin();
         debugPayload();
     }
 
+    int getProtoId() const
+    {
+        return header->getProtoId();
+    }
+
 private:
-    H header;
+    std::shared_ptr<IHeader> header;
     std::shared_ptr<char[]> payload;
     uint32_t lengthPayload;
 

@@ -4,6 +4,10 @@
 #include <string>
 #include <ranges>
 
+#include "packet/icmp_header.h"
+#include "packet/tcp_header.h"
+#include "packet/udp_header.h"
+
 namespace network {
 
 Socket::Socket(PACKET_TYPE type)
@@ -109,15 +113,48 @@ uint32_t blockingReadPackets(const Socket &socket, IPacketHandler *packetHandler
     return blockingReadPackets(socket.getSocketFd(), packetHandler, conditionFinishRead, microsecInterval, flags);
 }
 
-/*
-uint32_t blockingReadPackets(std::vector<char>& data, bool& conditionFinishRead, int miscrosecInterval, int flags)
+void IPacketHandler::handleData(const std::vector<unsigned char>& incomingNetData)
 {
+    const auto resolvedPacket = resolvePacket(incomingNetData);
+    qDebug() << "Incoming Packet Proto ID: " << resolvedPacket->getProtoId();
 
+    if(resolvedPacket.has_value()){
+        handlePacket(std::move(resolvedPacket.value()));
+    }else{
+        qDebug() << "Unknown type packet!";
+    }
 }
 
-uint32_t blockingReadPackets(const std::function<void (const std::vector<char> &)>& dataExecutor, bool& conditionFinishRead, int miscrosecInterval, int flags)
+std::optional<NetPacket> IPacketHandler::resolvePacket(std::vector<unsigned char> incomingNetData)
 {
+    if(incomingNetData.size() < 20){ //Минимальный размер IP пакета
+        return std::nullopt;
+    }
 
+    //Определить тип пакета по анализу нужного поля в IP пакете
+    const uint8_t protoIdIncomingData = incomingNetData[9];
+
+    //Отбросить данные, относящиеся к заголовку IP пакета
+    const uint8_t lengthIpHeaderBytes = 4 * (incomingNetData[0] & 0x0F); //Берем только 4 млашдших бита первого байта
+    incomingNetData.erase(std::begin(incomingNetData), std::begin(incomingNetData) + lengthIpHeaderBytes);
+
+    std::shared_ptr<IHeader> packetHeader;
+
+    switch (static_cast<PACKET_TYPE>(protoIdIncomingData)) {
+    case PACKET_TYPE::TCP:
+        packetHeader = std::make_shared<TcpHeader>(0, 0);
+        break;
+    case PACKET_TYPE::UDP:
+        packetHeader = std::make_shared<UdpHeader>();
+        break;
+    case PACKET_TYPE::ICMP:
+        packetHeader = std::make_shared<IcmpHeader>();
+        break;
+    default:
+        return std::nullopt;
+    }
+
+    return NetPacket{packetHeader, incomingNetData};
 }
-*/
+
 }

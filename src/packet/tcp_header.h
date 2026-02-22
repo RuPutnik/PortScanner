@@ -99,6 +99,8 @@ public:
     uint32_t maxPayloadLengthBytes() const override;
     uint16_t getProtoId() const override;
 
+    uint32_t setHeaderData(const std::vector<unsigned char>& dataPacket) override;
+
 private:
     using OptionData = std::pair<int32_t, std::string>; //Размер в байтах, текстовое название
 

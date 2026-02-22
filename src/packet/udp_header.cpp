@@ -101,4 +101,10 @@ uint16_t UdpHeader::getProtoId() const
     return IPPROTO_UDP;
 }
 
+uint32_t UdpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
+{
+ //TODO не может добавлять доп.поля
+
 }
+
+

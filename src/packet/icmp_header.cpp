@@ -12,7 +12,10 @@ IcmpHeader::IcmpHeader(Type type):
         {"identifier", 16}, {"seqNumber", 16}
     }}}
 {
-    setType(type);
+    if(type > Type::Unknown){
+        setType(type);
+    }
+
     setCode(0);
     setIdentifier(generateRandomNumber<uint16_t>());
     setSeqNumber(0);
@@ -247,6 +250,11 @@ timeval IcmpHeader::getTimestampLabel()
     gettimeofday(&tv, nullptr);
 
     return tv;
+}
+
+uint32_t IcmpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
+{
+
 }
 
 }

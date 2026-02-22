@@ -2,6 +2,7 @@
 #define TOOLS_H
 
 #include <cstdint>
+#include <string>
 #include <limits>
 #include <linux/if_ether.h>
 
@@ -19,6 +20,16 @@ template<class T>
 
 const inline uint32_t ipHeaderLenBytes = 20;
 constexpr static inline uint32_t maxTransportPacketLenBytes = ETH_DATA_LEN - ipHeaderLenBytes;  // = 1480
+
+std::string getCurrentIpAddress()
+{
+
+}
+
+std::string resolveHostname(const std::string& hostName)
+{
+
+}
 
 }
 

@@ -111,89 +111,80 @@ void fakeListener()
 }
 */
 
-std::string getCurrentIpAddress()
-{
-
-}
-
-std::string resolveHostname(const std::string& hostName)
-{
-
-}
-
 int main(int argc, char** argv)
 {
+    std::string currIp = network::getCurrentIpAddress();
     //QCoreApplication a(argc, argv);
-
-    in_addr sourceAddress, targetAddress;
-    if(inet_pton(AF_INET, destIP, &targetAddress.s_addr) < 0){
-        perror("Error format IPv4 address");
-        return errno;
-    }
-
-    if(inet_pton(AF_INET, sourceIP, &sourceAddress.s_addr) < 0){
-        perror("Error format IPv4 address");
-        return errno;
-    }
-
-    TcpHeader tcpHeader{sourceAddress.s_addr, targetAddress.s_addr};
-    tcpHeader.setSrcPort(48000);
-    tcpHeader.setDstPort(80);
-    tcpHeader.setFlags(TcpHeader::SYN);
-    tcpHeader.addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 1460}});
- //   tcpHeader.addOption(TcpHeader::Options::SACK_Permitted);
-//    tcpHeader.addOption(TcpHeader::Options::Timestamps, {{TcpHeader::OptionValue::UINT32, 1000000}, {TcpHeader::OptionValue::UINT32, 0}});
-//    tcpHeader.addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT8, 7}});
-
-    qDebug().noquote() << tcpHeader.getOptionsAsText();
-    //tcpHeader.debugHex();
-    //tcpHeader.debugBin();
-
-    qDebug() << "URG" << tcpHeader.isUrg();
-    qDebug() << "ACK" << tcpHeader.isAck();
-    qDebug() << "PSH" << tcpHeader.isPsh();
-    qDebug() << "RST" << tcpHeader.isRst();
-    qDebug() << "SYN" << tcpHeader.isSyn();
-    qDebug() << "FIN" << tcpHeader.isFin();
-
-    network::NetPacket<TcpHeader> tcpPack{std::move(tcpHeader)};
-    std::jthread listenThread{&rawListener};
-
-    UdpHeader udpHead{sourceAddress.s_addr, targetAddress.s_addr};
-    udpHead.setSrcPort(48000);
-    udpHead.setDstPort(80);
-    udpHead.setPayloadBytesLength(0);
-
-    //udpHead.debugHex();
-
-    network::NetPacket<UdpHeader> udpPack{std::move(udpHead)};
-
-    //udpPack.debugHex();
-
-    IcmpHeader icmpHeader{IcmpHeader::Type::EchoRequest};
-
-    network::NetPacket<IcmpHeader> icmpPack{std::move(icmpHeader)};
-    icmpPack.setPayload(std::string{"www.youtube.com"});
-
-    icmpPack.debugBin();
-
-    sleep(1);
-    qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";
-    while(true) {
-        sleep(3);
-       // if(!network::sendPacketTo(Socket{PACKET_TYPE::TCP}, tcpPack, destIP).first){
-       //     perror("packet send error:");
-       // }
-       // if(!network::sendPacketTo(Socket{PACKET_TYPE::UDP}, udpPack, destIP).first){
-       //     perror("packet send error:");
-       // }
-
-        if(!network::sendPacketTo(Socket{PACKET_TYPE::ICMP}, icmpPack, destIP).first){
-            perror("packet send error:");
-        }
-    }
-
-
-    return 0;//a.exec();
+//
+//    in_addr sourceAddress, targetAddress;
+//    if(inet_pton(AF_INET, destIP, &targetAddress.s_addr) < 0){
+//        perror("Error format IPv4 address");
+//        return errno;
+//    }
+//
+//    if(inet_pton(AF_INET, sourceIP, &sourceAddress.s_addr) < 0){
+//        perror("Error format IPv4 address");
+//        return errno;
+//    }
+//
+//    TcpHeader tcpHeader{sourceAddress.s_addr, targetAddress.s_addr};
+//    tcpHeader.setSrcPort(48000);
+//    tcpHeader.setDstPort(80);
+//    tcpHeader.setFlags(TcpHeader::SYN);
+//    tcpHeader.addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 1460}});
+// //   tcpHeader.addOption(TcpHeader::Options::SACK_Permitted);
+////    tcpHeader.addOption(TcpHeader::Options::Timestamps, {{TcpHeader::OptionValue::UINT32, 1000000}, {TcpHeader::OptionValue::UINT32, 0}});
+////    tcpHeader.addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT8, 7}});
+//
+//    qDebug().noquote() << tcpHeader.getOptionsAsText();
+//    //tcpHeader.debugHex();
+//    //tcpHeader.debugBin();
+//
+//    qDebug() << "URG" << tcpHeader.isUrg();
+//    qDebug() << "ACK" << tcpHeader.isAck();
+//    qDebug() << "PSH" << tcpHeader.isPsh();
+//    qDebug() << "RST" << tcpHeader.isRst();
+//    qDebug() << "SYN" << tcpHeader.isSyn();
+//    qDebug() << "FIN" << tcpHeader.isFin();
+//
+//    network::NetPacket<TcpHeader> tcpPack{std::move(tcpHeader)};
+//    std::jthread listenThread{&rawListener};
+//
+//    UdpHeader udpHead{sourceAddress.s_addr, targetAddress.s_addr};
+//    udpHead.setSrcPort(48000);
+//    udpHead.setDstPort(80);
+//    udpHead.setPayloadBytesLength(0);
+//
+//    //udpHead.debugHex();
+//
+//    network::NetPacket<UdpHeader> udpPack{std::move(udpHead)};
+//
+//    //udpPack.debugHex();
+//
+//    IcmpHeader icmpHeader{IcmpHeader::Type::EchoRequest};
+//
+//    network::NetPacket<IcmpHeader> icmpPack{std::move(icmpHeader)};
+//    icmpPack.setPayload(std::string{"www.youtube.com"});
+//
+//    icmpPack.debugBin();
+//
+//    sleep(1);
+//    qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";
+//    while(true) {
+//        sleep(3);
+//       // if(!network::sendPacketTo(Socket{PACKET_TYPE::TCP}, tcpPack, destIP).first){
+//       //     perror("packet send error:");
+//       // }
+//       // if(!network::sendPacketTo(Socket{PACKET_TYPE::UDP}, udpPack, destIP).first){
+//       //     perror("packet send error:");
+//       // }
+//
+//        if(!network::sendPacketTo(Socket{PACKET_TYPE::ICMP}, icmpPack, destIP).first){
+//            perror("packet send error:");
+//        }
+//    }
+//
+//
+//    return 0;//a.exec();
 }
 

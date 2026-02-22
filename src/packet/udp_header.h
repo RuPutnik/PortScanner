@@ -34,6 +34,7 @@ public:
     void debugBin() const override;
     uint16_t getProtoId() const override;
 
+    uint32_t setHeaderData(const std::vector<unsigned char>& dataPacket) override;
 };
 
 }

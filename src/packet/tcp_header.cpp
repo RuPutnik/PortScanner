@@ -387,4 +387,11 @@ uint16_t TcpHeader::getProtoId() const
     return IPPROTO_TCP;
 }
 
+uint32_t TcpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
+{
+
 }
+
+}
+
+

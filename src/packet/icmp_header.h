@@ -10,6 +10,7 @@ class IcmpHeader final : public IHeader
 public:
     enum class Type
     {
+        Unknown = -1,
         EchoReply = 0,
         UnreachableDestNode = 3,
         SourceSuppression = 4,
@@ -49,6 +50,8 @@ public:
     std::string getTextCode() const;
 
     timeval getTimestampLabel();
+
+    uint32_t setHeaderData(const std::vector<unsigned char>& dataPacket) override;
 };
 
 }
