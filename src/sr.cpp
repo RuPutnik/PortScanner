@@ -1,7 +1,5 @@
 #include "sr.h"
 
-//#include <atomic>
-
 #include <sys/socket.h>
 #include <string>
 #include <ranges>
