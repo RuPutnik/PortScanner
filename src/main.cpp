@@ -30,7 +30,7 @@ void rawListener()
         qDebug() << "Получено байт: " << vec.size();
         QString word;
 
-        for(auto i = 0; i < vec.size(); i++){
+        for(std::size_t i = 0; i < vec.size(); i++){
             word += QString::number(vec[i], 16).rightJustified(2, '0');
             if((i+1) % 4 == 0) {
                 qDebug().noquote() << "0x" + word;
@@ -40,8 +40,8 @@ void rawListener()
         qDebug() << "\n";
     };
 
-    bool b = true;
-    int errCode = network::blockingReadPackets(Socket{PACKET_TYPE::TCP}, printerRawData, b);
+    std::atomic<bool> b = true;
+    [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::TCP}, printerRawData, b);
 }
 /*
 void fakeListener()
@@ -110,6 +110,17 @@ void fakeListener()
     }
 }
 */
+
+std::string getCurrentIpAddress()
+{
+
+}
+
+std::string resolveHostname(const std::string& hostName)
+{
+
+}
+
 int main(int argc, char** argv)
 {
     //QCoreApplication a(argc, argv);

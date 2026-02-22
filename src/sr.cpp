@@ -1,5 +1,7 @@
 #include "sr.h"
 
+//#include <atomic>
+
 #include <sys/socket.h>
 #include <string>
 #include <ranges>
@@ -61,33 +63,9 @@ std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(const Socket&
     return blockingReadPacket(socket.getSocketFd(), flags);
 }
 
-uint32_t blockingReadPackets(int fileDescriptor, std::vector<unsigned char>& data, bool& conditionFinishRead, int miscrosecInterval, int flags)
+uint32_t blockingReadPackets(int fileDescriptor, const std::function<void (const std::vector<unsigned char> &)>& dataExecutor, std::atomic<bool>& conditionFinishRead, int microsecInterval, int flags)
 {
-    const auto sleepMicroseconds = miscrosecInterval < 0 ? 1000 : static_cast<__useconds_t>(miscrosecInterval);
-
-    while(conditionFinishRead)
-    {
-        const auto[bytes, errCode] = blockingReadPacket(fileDescriptor, flags);
-
-        if(errCode > 0)
-            return errCode;
-
-        std::ranges::copy(bytes, std::back_inserter(data));
-
-        usleep(sleepMicroseconds);
-    }
-
-    return 0;
-}
-
-uint32_t blockingReadPackets(const Socket& socket, std::vector<unsigned char> &data, bool& conditionFinishRead, int miscrosecInterval, int flags)
-{
-    return blockingReadPackets(socket.getSocketFd(), data, conditionFinishRead, miscrosecInterval, flags);
-}
-
-uint32_t blockingReadPackets(int fileDescriptor, const std::function<void (const std::vector<unsigned char> &)>& dataExecutor, bool& conditionFinishRead, int miscrosecInterval, int flags)
-{
-    const auto sleepMicroseconds = miscrosecInterval < 0 ? 1000 : static_cast<__useconds_t>(miscrosecInterval);
+    const auto sleepMicroseconds = microsecInterval < 0 ? 1000 : static_cast<__useconds_t>(microsecInterval);
 
     while(conditionFinishRead)
     {
@@ -104,9 +82,33 @@ uint32_t blockingReadPackets(int fileDescriptor, const std::function<void (const
     return 0;
 }
 
-uint32_t blockingReadPackets(const Socket& socket, const std::function<void (const std::vector<unsigned char> &)> &dataExecutor, bool& conditionFinishRead, int miscrosecInterval, int flags)
+uint32_t blockingReadPackets(const Socket& socket, const std::function<void (const std::vector<unsigned char> &)>& dataExecutor, std::atomic<bool>& conditionFinishRead, int microsecInterval, int flags)
 {
-    return blockingReadPackets(socket.getSocketFd(), dataExecutor, conditionFinishRead, miscrosecInterval, flags);
+    return blockingReadPackets(socket.getSocketFd(), dataExecutor, conditionFinishRead, microsecInterval, flags);
+}
+
+uint32_t blockingReadPackets(int fileDescriptor, IPacketHandler* packetHandler, std::atomic<bool> &conditionFinishRead, int microsecInterval, int flags)
+{
+    const auto sleepMicroseconds = microsecInterval < 0 ? 1000 : static_cast<__useconds_t>(microsecInterval);
+
+    while(conditionFinishRead)
+    {
+        const auto[bytes, errCode] = blockingReadPacket(fileDescriptor, flags);
+
+        if(errCode > 0)
+            return errCode;
+
+        packetHandler->handleData(bytes);
+
+        usleep(sleepMicroseconds);
+    }
+
+    return 0;
+}
+
+uint32_t blockingReadPackets(const Socket &socket, IPacketHandler *packetHandler, std::atomic<bool> &conditionFinishRead, int microsecInterval, int flags)
+{
+    return blockingReadPackets(socket.getSocketFd(), packetHandler, conditionFinishRead, microsecInterval, flags);
 }
 
 /*

@@ -28,9 +28,17 @@ private:
     int socketFd;
 };
 
+class IPacketHandler
+{
+public:
+    virtual ~IPacketHandler() = default;
+    virtual void handleData(const std::vector<unsigned char>& incomingNetData) = 0;
+
+};
+
 template<class H> requires std::derived_from<H, IHeader>
 //TODO use std::expected<>
-std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(int fileDescriptor, NetPacket<H> packet, const std::string& ipv4Address, int flags = 0)
+[[maybe_unused]] std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(int fileDescriptor, NetPacket<H> packet, const std::string& ipv4Address, int flags = 0)
 {
     in_addr targetAddress;
     if(inet_pton(AF_INET, ipv4Address.c_str(), &targetAddress.s_addr) < 0){
@@ -52,20 +60,20 @@ std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(int fileDescriptor, Net
 }
 
 template<class H>
-std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(const Socket& socket, NetPacket<H> packet, const std::string& ipv4Address, int flags = 0)
+[[maybe_unused]] std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(const Socket& socket, NetPacket<H> packet, const std::string& ipv4Address, int flags = 0)
 {
     return sendPacketTo(socket.getSocketFd(), std::move(packet), ipv4Address, flags);
 }
 
 
-std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(int fileDescriptor, int flags = 0);
-std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(const Socket& socket, int flags = 0);
+[[maybe_unused]] std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(int fileDescriptor, int flags = 0);
+[[maybe_unused]] std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(const Socket& socket, int flags = 0);
 
-uint32_t blockingReadPackets(int fileDescriptor, std::vector<unsigned char>& data, bool& conditionFinishRead, int miscrosecInterval = -1, int flags = 0);
-uint32_t blockingReadPackets(const Socket& socket, std::vector<unsigned char>& data, bool& conditionFinishRead, int miscrosecInterval = -1, int flags = 0);
+[[maybe_unused]] uint32_t blockingReadPackets(int fileDescriptor, const std::function<void (const std::vector<unsigned char>&)>& dataExecutor, std::atomic<bool>& conditionFinishRead, int microsecInterval = -1, int flags = 0);
+[[maybe_unused]] uint32_t blockingReadPackets(const Socket& socket, const std::function<void (const std::vector<unsigned char>&)>& dataExecutor, std::atomic<bool>& conditionFinishRead, int microsecInterval = -1, int flags = 0);
 
-uint32_t blockingReadPackets(int fileDescriptor, const std::function<void (const std::vector<unsigned char>&)>& dataExecutor, bool& conditionFinishRead, int miscrosecInterval = -1, int flags = 0);
-uint32_t blockingReadPackets(const Socket& socket, const std::function<void (const std::vector<unsigned char>&)>& dataExecutor, bool& conditionFinishRead, int miscrosecInterval = -1, int flags = 0);
+[[maybe_unused]] uint32_t blockingReadPackets(int fileDescriptor, IPacketHandler* packetHandler, std::atomic<bool>& conditionFinishRead, int microsecInterval = -1, int flags = 0);
+[[maybe_unused]] uint32_t blockingReadPackets(const Socket& socket, IPacketHandler* packetHandler, std::atomic<bool>& conditionFinishRead, int microsecInterval = -1, int flags = 0);
 
 //uint32_t blockingReadPackets(std::vector<unsigned char>& data, bool& conditionFinishRead, int miscrosecInterval = -1, int flags = 0);
 //uint32_t blockingReadPackets(const std::function<void (const std::vector<unsigned char>&)>& dataExecutor, bool& conditionFinishRead, int miscrosecInterval = -1, int flags = 0);
