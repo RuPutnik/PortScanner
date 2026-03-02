@@ -261,7 +261,9 @@ timeval IcmpHeader::getTimestampLabel()
 
 uint16_t IcmpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
 {
-    //TODO может добавлять доп.поля (в зависимости от типа пакета)
+    //Тут мы не учитываем возможные опции, так как от того, что эти данные могут уйти в полезную нагрузку никакого вреда нет
+    headerFormat.setInternalBufferValues(dataPacket.data());
+    return static_cast<uint16_t>(headerFormat.getLength());
 }
 
 std::optional<std::pair<uint32_t, uint32_t>> IcmpHeader::generatePortData(uint32_t sourceIp, uint32_t destinationIp) const

@@ -41,7 +41,7 @@ void rawListener()
     };
 
     std::atomic<bool> b = true;
-    [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::TCP}, printerRawData, b);
+    [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::ICMP}, printerRawData, b);
 }
 /*
 void fakeListener()

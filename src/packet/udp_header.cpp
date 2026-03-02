@@ -103,8 +103,9 @@ uint16_t UdpHeader::getProtoId() const
 
 uint16_t UdpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
 {
- //TODO не может добавлять доп.поля
+    headerFormat.setInternalBufferValues(dataPacket.data());
 
+    return static_cast<uint16_t>(headerFormat.getLength());
 }
 
 std::shared_ptr<IHeader> UdpHeader::clone()

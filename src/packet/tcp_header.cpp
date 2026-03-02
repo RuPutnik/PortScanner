@@ -389,7 +389,19 @@ uint16_t TcpHeader::getProtoId() const
 
 uint16_t TcpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
 {
-    //TODO может добавлять доп.поля (опции)
+    headerFormat.setInternalBufferValues(dataPacket.data());
+
+    const uint16_t incomingHeaderLenBytes = getHdrLen() * wordByteSize;
+
+    //Если длина заголовка, прочитанная из входящих данных больше длины стандартного заголовка без опций
+    if(incomingHeaderLenBytes > headerFormat.getLength())
+    {
+        const uint16_t totalOptionLenBits = static_cast<uint16_t>(network::bitSize(incomingHeaderLenBytes - headerFormat.getLength()));
+        headerFormat.appendField({"options", totalOptionLenBits});
+        headerFormat.setInternalBufferValues(dataPacket.data());
+    }
+
+    return incomingHeaderLenBytes;
 }
 
 std::shared_ptr<IHeader> TcpHeader::clone()
