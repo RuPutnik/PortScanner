@@ -121,7 +121,7 @@ void IPacketHandler::handleData(const std::vector<unsigned char>& incomingNetDat
 
 std::optional<NetPacket> IPacketHandler::resolvePacket(std::vector<unsigned char> incomingNetData)
 {
-    if(incomingNetData.size() < 20){ //Минимальный размер IP пакета
+    if(incomingNetData.size() < minIpHeaderLenBytes){
         return std::nullopt;
     }
 

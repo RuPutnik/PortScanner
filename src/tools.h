@@ -10,7 +10,6 @@
 #include <fstream>
 #include <netinet/in.h>
 
-#include <QFile>
 #include <QDebug>
 
 namespace network {
@@ -25,8 +24,8 @@ template<class T>
     return __CHAR_BIT__ * amountBytes;
 }
 
-const inline uint32_t ipHeaderLenBytes = 20;
-constexpr static inline uint32_t maxTransportPacketLenBytes = ETH_DATA_LEN - ipHeaderLenBytes;  // = 1480
+const inline uint32_t minIpHeaderLenBytes = 20;
+constexpr static inline uint32_t maxTransportPacketLenBytes = ETH_DATA_LEN - minIpHeaderLenBytes;  // = 1480
 
 inline std::string getDefaultEthIface()
 {
@@ -54,12 +53,11 @@ inline std::string getDefaultEthIface()
 
 inline char* getCurrentIpAddress()
 {
-    int fdSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    const int fdSocket = socket(AF_INET, SOCK_DGRAM, 0);
     static char ipAddress[INET_ADDRSTRLEN];
     memset(ipAddress, 0, sizeof(ipAddress));
 
     const std::string ifname = getDefaultEthIface();
-    qDebug() << ifname;
 
     class ifreq ifr = {0};
     snprintf(ifr.ifr_name, IFNAMSIZ, "%s", ifname.c_str());
