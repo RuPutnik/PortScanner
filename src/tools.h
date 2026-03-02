@@ -26,6 +26,7 @@ template<class T>
 
 const inline uint32_t minIpHeaderLenBytes = 20;
 constexpr static inline uint32_t maxTransportPacketLenBytes = ETH_DATA_LEN - minIpHeaderLenBytes;  // = 1480
+const inline uint32_t wordByteSize = 4;
 
 inline std::string getDefaultEthIface()
 {
