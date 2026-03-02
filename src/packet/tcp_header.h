@@ -98,6 +98,7 @@ public:
     std::string getOptionsAsText() const;
     uint32_t maxPayloadLengthBytes() const override;
     uint16_t getProtoId() const override;
+    std::shared_ptr<IHeader> clone() override;
 
     uint16_t setHeaderData(const std::vector<unsigned char>& dataPacket) override;
 

@@ -23,6 +23,7 @@ public:
     virtual void debugHex() const = 0;
     virtual void debugBin() const = 0;
     virtual uint16_t getProtoId() const = 0;
+    virtual std::shared_ptr<IHeader> clone() = 0;
 
 protected:
     struct PseudoIpHeader final

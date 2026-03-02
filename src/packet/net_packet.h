@@ -36,10 +36,26 @@ public:
         }
     }
 
-    NetPacket(const NetPacket&) = default;
+    NetPacket(const NetPacket& packet):
+        lengthPayload{packet.lengthPayload}
+    {
+        payload = std::shared_ptr<char[]>(new char[lengthPayload]);
+        memcpy(payload.get(), packet.payload.get(), lengthPayload);
+        header = packet.header->clone();
+    }
+
     NetPacket(NetPacket&&) = default;
 
-    NetPacket& operator=(const NetPacket&) noexcept = default;
+    NetPacket& operator=(const NetPacket& packet) noexcept
+    {
+        lengthPayload = packet.lengthPayload;
+        payload.reset(new char[lengthPayload]);
+        memcpy(payload.get(), packet.payload.get(), lengthPayload);
+        header = packet.header->clone();
+
+        return *this;
+    }
+
     NetPacket& operator=(NetPacket&&) noexcept = default;
 
     uint32_t getBytesLength() const

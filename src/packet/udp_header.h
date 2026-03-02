@@ -15,7 +15,7 @@ public:
     UdpHeader(uint32_t sourceIp, uint32_t destinationIp);
 
     std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]> &payload, uint32_t payloadLenBytes) override;
-
+    std::shared_ptr<IHeader> clone() override;
     uint32_t maxPayloadLengthBytes() const override;
 
     uint16_t getSrcPort() const;
@@ -35,6 +35,7 @@ public:
     uint16_t getProtoId() const override;
 
     uint16_t setHeaderData(const std::vector<unsigned char>& dataPacket) override;
+
 };
 
 }

@@ -107,4 +107,9 @@ uint16_t UdpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
 
 }
 
+std::shared_ptr<IHeader> UdpHeader::clone()
+{
+    return std::shared_ptr<UdpHeader>(new UdpHeader(*this));
+}
+
 }

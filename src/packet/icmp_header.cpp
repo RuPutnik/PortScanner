@@ -273,6 +273,11 @@ std::optional<std::pair<uint32_t, uint32_t>> IcmpHeader::generatePortData(uint32
     return std::pair{sourceIp, destinationIp};
 }
 
+std::shared_ptr<IHeader> IcmpHeader::clone()
+{
+    return std::shared_ptr<IcmpHeader>(new IcmpHeader(*this));
+}
+
 }
 
 

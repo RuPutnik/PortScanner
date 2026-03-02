@@ -392,6 +392,9 @@ uint16_t TcpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
     //TODO может добавлять доп.поля (опции)
 }
 
+std::shared_ptr<IHeader> TcpHeader::clone()
+{
+    return std::shared_ptr<TcpHeader>(new TcpHeader(*this));
 }
 
-
+}
