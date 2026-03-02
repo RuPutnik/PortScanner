@@ -8,6 +8,7 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <fstream>
+#include <netinet/in.h>
 
 #include <QFile>
 #include <QDebug>
@@ -54,7 +55,7 @@ inline std::string getDefaultEthIface()
 inline char* getCurrentIpAddress()
 {
     int fdSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    static char ipAddress[16];
+    static char ipAddress[INET_ADDRSTRLEN];
     memset(ipAddress, 0, sizeof(ipAddress));
 
     const std::string ifname = getDefaultEthIface();

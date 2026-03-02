@@ -7,9 +7,13 @@
 namespace network {
 
 IcmpHeader::IcmpHeader(Type type):
-    IHeader{std::nullopt, {{
-        {"type", 8}, {"code", 8}, {"chksum", 16},
-        {"identifier", 16}, {"seqNumber", 16}
+    IcmpHeader{0, 0, type}
+{}
+
+IcmpHeader::IcmpHeader(uint32_t sourceIp, uint32_t destinationIp, Type type):
+    IHeader{generatePortData(sourceIp, destinationIp), {{
+            {"type", 8}, {"code", 8}, {"chksum", 16},
+            {"identifier", 16}, {"seqNumber", 16}
     }}}
 {
     if(type > Type::Unknown){
@@ -144,37 +148,37 @@ std::string IcmpHeader::getTextCode() const
         break;
     case Type::UnreachableDestNode:
         switch(getCode()){
-        case 0:
+        case ICMP_NET_UNREACH:
             return "Сеть недостижима";
-        case 1:
+        case ICMP_HOST_UNREACH:
             return "Узел недостижим";
-        case 2:
+        case ICMP_PROT_UNREACH:
             return "Протокол недостижим";
-        case 3:
+        case ICMP_PORT_UNREACH:
             return "Порт недостижим";
-        case 4:
+        case ICMP_FRAG_NEEDED:
             return "Необходима фрагментация, но установлен флаг её запрета (DF)";
-        case 5:
+        case ICMP_SR_FAILED:
             return "Неверный маршрут от источника";
-        case 6:
+        case ICMP_NET_UNKNOWN:
             return "Сеть назначения неизвестна";
-        case 7:
+        case ICMP_HOST_UNKNOWN:
             return "Узел назначения неизвестен";
-        case 8:
+        case ICMP_HOST_ISOLATED:
             return "Узел-источник изолирован";
-        case 9:
+        case ICMP_NET_ANO:
             return "Сеть административно запрещена";
-        case 10:
+        case ICMP_HOST_ANO:
             return "Узел административно запрещен";
-        case 11:
+        case ICMP_NET_UNR_TOS:
             return "Сеть недоступна для ToS";
-        case 12:
+        case ICMP_HOST_UNR_TOS:
             return "Узел недоступен для Tos";
-        case 13:
+        case ICMP_PKT_FILTERED:
             return "Коммуникации административно запрещены";
-        case 14:
+        case ICMP_PREC_VIOLATION:
             return "Нарушение порядка предпочтения узлов";
-        case 15:
+        case ICMP_PREC_CUTOFF:
             return "Активно отсечение порядка предпочтения";
         }
         break;
@@ -185,13 +189,13 @@ std::string IcmpHeader::getTextCode() const
         break;
     case Type::RouteRedirection:
         switch (getCode()) {
-        case 0:
+        case ICMP_REDIR_NET:
             return "Перенаправление пакетов в сеть";
-        case 1:
+        case ICMP_REDIR_HOST:
             return "Перенаправление пакетов к узлу";
-        case 2:
+        case ICMP_REDIR_NETTOS:
             return "Перенаправление для каждого типа обслуживания (ToS)";
-        case 3:
+        case ICMP_REDIR_HOSTTOS:
             return "Перенаправление пакета к узлу для каждого типа обслуживания";
         }
         break;
@@ -202,9 +206,9 @@ std::string IcmpHeader::getTextCode() const
         break;
     case Type::TimeExceeded:
         switch (getCode()) {
-        case 0:
+        case ICMP_EXC_TTL:
             return "Время жизни пакета (TTL) истекло при транспортировке";
-        case 1:
+        case ICMP_EXC_FRAGTIME:
             return "Время жизни пакета истекло при сборке фрагментов";
         }
         break;
@@ -238,6 +242,9 @@ std::string IcmpHeader::getTextCode() const
             return "Информационный ответ";
         }
         break;
+
+    default:
+        return "";
     }
 
     return "";
@@ -252,9 +259,18 @@ timeval IcmpHeader::getTimestampLabel()
     return tv;
 }
 
-uint32_t IcmpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
+uint16_t IcmpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
 {
     //TODO может добавлять доп.поля (в зависимости от типа пакета)
+}
+
+std::optional<std::pair<uint32_t, uint32_t>> IcmpHeader::generatePortData(uint32_t sourceIp, uint32_t destinationIp) const
+{
+    if(sourceIp == 0 && destinationIp == 0){
+        return std::nullopt;
+    }
+
+    return std::pair{sourceIp, destinationIp};
 }
 
 }

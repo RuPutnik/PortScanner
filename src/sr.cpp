@@ -7,6 +7,7 @@
 #include "packet/icmp_header.h"
 #include "packet/tcp_header.h"
 #include "packet/udp_header.h"
+#include "packet/ip_header.h"
 
 namespace network {
 
@@ -38,24 +39,17 @@ std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(int fileDescr
         return {{}, errno};
     }
 
-    sockaddr_in incAddr;
     constexpr size_t sizeMsg = ETH_DATA_LEN;
     unsigned char buff[sizeMsg];
 
-    sockaddr rawAddr;
-    std::vector<unsigned char> dataResult;
-    socklen_t addrBytesLen;
-
-    const auto amountBytes = recvfrom(fileDescriptor, buff, sizeMsg, flags, &rawAddr, &addrBytesLen);
+    const auto amountBytes = recvfrom(fileDescriptor, buff, sizeMsg, flags, nullptr, nullptr);
     if(amountBytes <= 0){
-        return {dataResult, errno};
+        return {{}, errno};
     }
 
-    memcpy(&incAddr, &rawAddr, sizeof(sockaddr)); //TODO Подумать, что с этим делать
-
-    for(int i = 0; i < amountBytes; i++){
-        dataResult.push_back(buff[i]);
-    }
+    std::vector<unsigned char> dataResult;
+    dataResult.reserve(static_cast<unsigned long>(amountBytes));
+    std::copy(buff, buff + amountBytes, dataResult.data());
 
     return {dataResult, 0};
 }
@@ -131,24 +125,25 @@ std::optional<NetPacket> IPacketHandler::resolvePacket(std::vector<unsigned char
         return std::nullopt;
     }
 
-    //Определить тип пакета по анализу нужного поля в IP пакете
-    const uint8_t protoIdIncomingData = incomingNetData[9];
+    IpHeader ipHeader;
 
-    //Отбросить данные, относящиеся к заголовку IP пакета
-    const uint8_t lengthIpHeaderBytes = 4 * (incomingNetData[0] & 0x0F); //Берем только 4 млашдших бита первого байта
+    const uint16_t lengthIpHeaderBytes = ipHeader.setHeaderData(incomingNetData);
+
     incomingNetData.erase(std::begin(incomingNetData), std::begin(incomingNetData) + lengthIpHeaderBytes);
 
     std::shared_ptr<IHeader> packetHeader;
+    const uint32_t sourceIp = ipHeader.getSourceIP();
+    const uint32_t targetIp = ipHeader.getTargetIP();
 
-    switch (static_cast<PACKET_TYPE>(protoIdIncomingData)) {
+    switch (static_cast<PACKET_TYPE>(ipHeader.getProtoId())) {
     case PACKET_TYPE::TCP:
-        packetHeader = std::make_shared<TcpHeader>(0, 0);
+        packetHeader = std::make_shared<TcpHeader>(sourceIp, targetIp);
         break;
     case PACKET_TYPE::UDP:
-        packetHeader = std::make_shared<UdpHeader>();
+        packetHeader = std::make_shared<UdpHeader>(sourceIp, targetIp);
         break;
     case PACKET_TYPE::ICMP:
-        packetHeader = std::make_shared<IcmpHeader>(IcmpHeader::Type::Unknown);
+        packetHeader = std::make_shared<IcmpHeader>(sourceIp, targetIp);
         break;
     default:
         return std::nullopt;
