@@ -27,6 +27,7 @@ public:
     };
 
     IcmpHeader(Type type);
+    IcmpHeader(const std::string& sourceIp, const std::string& destinationIp, Type type = Type::Unknown);
     IcmpHeader(uint32_t sourceIp, uint32_t destinationIp, Type type = Type::Unknown);
 
     std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes) override;
@@ -56,9 +57,6 @@ public:
     timeval getTimestampLabel();
 
     uint16_t setHeaderData(const std::vector<unsigned char>& dataPacket) override;
-
-private:
-    std::optional<std::pair<uint32_t, uint32_t>> generatePortData(uint32_t sourceIp, uint32_t destinationIp) const;
 
 };
 

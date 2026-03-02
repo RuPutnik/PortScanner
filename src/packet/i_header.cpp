@@ -1,11 +1,38 @@
 #include "i_header.h"
 
+#include <arpa/inet.h>
 #include <chrono>
 #include <random>
 
-IHeader::IHeader(const std::optional<std::pair<uint32_t, uint32_t>>& packetIpAdresses, const kivk_lib::Protocol& protHeaderFormat):
+IHeader::IHeader(const std::string& sourceIpAddress, const std::string& destinationIpAddress, const kivk_lib::Protocol& protHeaderFormat):
+    headerFormat{protHeaderFormat}
+{
+    if(sourceIpAddress.empty() && destinationIpAddress.empty())
+        return;
+
+    in_addr sourceAddress{0};
+    in_addr targetAddress{0};
+
+    if(!sourceIpAddress.empty()){
+        if(inet_pton(AF_INET, sourceIpAddress.data(), &targetAddress.s_addr) < 0){
+            perror("Error format IPv4 address");
+            return;
+        }
+    }
+
+    if(!destinationIpAddress.empty()){
+        if(inet_pton(AF_INET, destinationIpAddress.data(), &targetAddress.s_addr) < 0){
+            perror("Error format IPv4 address");
+            return;
+        }
+    }
+
+    ipAdresses = {sourceAddress.s_addr, targetAddress.s_addr};
+}
+
+IHeader::IHeader(uint32_t sourceIpAddress, uint32_t destinationIpAddress, const kivk_lib::Protocol &protHeaderFormat):
     headerFormat{protHeaderFormat},
-    ipAdresses{packetIpAdresses}
+    ipAdresses{{sourceIpAddress, destinationIpAddress}}
 {}
 
 uint16_t IHeader::lengthBytes() const

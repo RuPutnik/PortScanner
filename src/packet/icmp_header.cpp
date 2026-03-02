@@ -7,11 +7,11 @@
 namespace network {
 
 IcmpHeader::IcmpHeader(Type type):
-    IcmpHeader{0, 0, type}
+    IcmpHeader{{}, {}, type}
 {}
 
-IcmpHeader::IcmpHeader(uint32_t sourceIp, uint32_t destinationIp, Type type):
-    IHeader{generatePortData(sourceIp, destinationIp), {{
+IcmpHeader::IcmpHeader(const std::string& sourceIp, const std::string& destinationIp, Type type):
+    IHeader{sourceIp, destinationIp, {{
             {"type", 8}, {"code", 8}, {"chksum", 16},
             {"identifier", 16}, {"seqNumber", 16}
     }}}
@@ -40,6 +40,12 @@ IcmpHeader::IcmpHeader(uint32_t sourceIp, uint32_t destinationIp, Type type):
     default:
         break;
     }
+}
+
+IcmpHeader::IcmpHeader(uint32_t sourceIp, uint32_t destinationIp, Type type):
+    IcmpHeader{"", "", type}
+{
+    ipAdresses = {sourceIp, destinationIp};
 }
 
 std::unique_ptr<const char[]> network::IcmpHeader::generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes)
@@ -264,15 +270,6 @@ uint16_t IcmpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
     //Тут мы не учитываем возможные опции, так как от того, что эти данные могут уйти в полезную нагрузку никакого вреда нет
     headerFormat.setInternalBufferValues(dataPacket.data());
     return static_cast<uint16_t>(headerFormat.getLength());
-}
-
-std::optional<std::pair<uint32_t, uint32_t>> IcmpHeader::generatePortData(uint32_t sourceIp, uint32_t destinationIp) const
-{
-    if(sourceIp == 0 && destinationIp == 0){
-        return std::nullopt;
-    }
-
-    return std::pair{sourceIp, destinationIp};
 }
 
 std::shared_ptr<IHeader> IcmpHeader::clone()

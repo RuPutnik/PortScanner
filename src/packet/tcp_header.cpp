@@ -19,8 +19,8 @@ const std::unordered_map<TcpHeader::Options, TcpHeader::OptionData> TcpHeader::o
     {Options::FastOpen, {18, "TCP Fast Open"}}
 };
 
-TcpHeader::TcpHeader(uint32_t sourceIp, uint32_t destinationIp):
-    IHeader{std::pair{sourceIp, destinationIp}, {{
+TcpHeader::TcpHeader(const std::string &sourceIp, const std::string &destinationIp):
+    IHeader{sourceIp, destinationIp, {{
             {"srcPort", 16}, {"dstPort", 16},
             {"seqNumber", 32},
             {"ackNumber", 32},
@@ -32,6 +32,12 @@ TcpHeader::TcpHeader(uint32_t sourceIp, uint32_t destinationIp):
     setSeqNumber(generateRandomNumber<uint32_t>());
     setWindowSize(defaultWindowSize);
     setHdrLen(static_cast<uint8_t>(lengthBytes() / sizeof(int32_t)));
+}
+
+TcpHeader::TcpHeader(uint32_t sourceIp, uint32_t destinationIp):
+    TcpHeader{"", ""}
+{
+    ipAdresses = {sourceIp, destinationIp};
 }
 
 std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes)

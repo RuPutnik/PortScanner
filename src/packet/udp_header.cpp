@@ -5,18 +5,24 @@
 namespace network {
 
 UdpHeader::UdpHeader():
-    IHeader{std::nullopt, {{
+    IHeader{"", "", {{
+        {"srcPort", 16}, {"dstPort", 16},
+        {"packetBytesLength", 16}, {"chksum", 16}
+    }}}
+{}
+
+UdpHeader::UdpHeader(const std::string &sourceIp, const std::string &destinationIp):
+    IHeader{sourceIp, destinationIp, {{
         {"srcPort", 16}, {"dstPort", 16},
         {"packetBytesLength", 16}, {"chksum", 16}
     }}}
 {}
 
 UdpHeader::UdpHeader(uint32_t sourceIp, uint32_t destinationIp):
-    IHeader{std::pair{sourceIp, destinationIp}, {{
-        {"srcPort", 16}, {"dstPort", 16},
-        {"packetBytesLength", 16}, {"chksum", 16}
-    }}}
-{}
+    UdpHeader{"", ""}
+{
+    ipAdresses = {sourceIp, destinationIp};
+}
 
 uint32_t UdpHeader::maxPayloadLengthBytes() const
 {

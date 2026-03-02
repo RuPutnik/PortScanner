@@ -5,7 +5,7 @@
 namespace network {
 
 IpHeader::IpHeader():
-    IHeader{std::pair{0, 0}, {{
+    IHeader{{}, {}, {{
         {"version", 4}, {"ihl", 4}, {"dscp", 6}, {"ecn", 2}, {"packetLength", 16},
         {"id", 16}, {"flags", 3}, {"fragmentOffset", 12},
         {"ttl", 8}, {"protocol", 8}, {"chksum", 16},

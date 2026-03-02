@@ -14,7 +14,8 @@ class IHeader
 public:
     virtual ~IHeader() = default;
 
-    IHeader(const std::optional<std::pair<uint32_t, uint32_t>>& packetIpAdresses, const kivk_lib::Protocol& protHeaderFormat);
+    IHeader(const std::string& sourceIpAddress, const std::string& destinationIpAddress, const kivk_lib::Protocol& protHeaderFormat);
+    IHeader(uint32_t sourceIpAddress, uint32_t destinationIpAddress, const kivk_lib::Protocol& protHeaderFormat);
 
     virtual uint16_t setHeaderData(const std::vector<unsigned char>& dataPacket) = 0; //Метод виртуальный, т.к. некоторые заголовки могут иметь плавающий размер
     virtual std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes) = 0;

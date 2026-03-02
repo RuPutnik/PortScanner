@@ -12,6 +12,7 @@ public:
     const static inline uint32_t maxUdpHeaderLenBytes = 8;
 
     UdpHeader();
+    UdpHeader(const std::string& sourceIp, const std::string& destinationIp);
     UdpHeader(uint32_t sourceIp, uint32_t destinationIp);
 
     std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]> &payload, uint32_t payloadLenBytes) override;

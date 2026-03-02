@@ -114,30 +114,30 @@ void fakeListener()
 int main(int argc, char** argv)
 {
     //QCoreApplication a(argc, argv);
-//
-    in_addr sourceAddress, targetAddress;
-    if(inet_pton(AF_INET, destIP, &targetAddress.s_addr) < 0){
-        perror("Error format IPv4 address");
-        return errno;
-    }
 
-    if(inet_pton(AF_INET, sourceIP, &sourceAddress.s_addr) < 0){
-        perror("Error format IPv4 address");
-        return errno;
-    }
+//    in_addr sourceAddress, targetAddress;
+//    if(inet_pton(AF_INET, destIP, &targetAddress.s_addr) < 0){
+//        perror("Error format IPv4 address");
+//        return errno;
+//    }
 
-    std::shared_ptr<TcpHeader> tcpHeader = std::make_shared<TcpHeader>(sourceAddress.s_addr, targetAddress.s_addr);
+//    if(inet_pton(AF_INET, sourceIP, &sourceAddress.s_addr) < 0){
+//        perror("Error format IPv4 address");
+//        return errno;
+//    }
+
+    std::shared_ptr<TcpHeader> tcpHeader = std::make_shared<TcpHeader>(sourceIP, destIP);
     tcpHeader->setSrcPort(48000);
     tcpHeader->setDstPort(80);
     tcpHeader->setFlags(TcpHeader::SYN);
     tcpHeader->addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 1460}});
- //   tcpHeader.addOption(TcpHeader::Options::SACK_Permitted);
-//    tcpHeader.addOption(TcpHeader::Options::Timestamps, {{TcpHeader::OptionValue::UINT32, 1000000}, {TcpHeader::OptionValue::UINT32, 0}});
-//    tcpHeader.addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT8, 7}});
+ //   tcpHeader->addOption(TcpHeader::Options::SACK_Permitted);
+//    tcpHeader->addOption(TcpHeader::Options::Timestamps, {{TcpHeader::OptionValue::UINT32, 1000000}, {TcpHeader::OptionValue::UINT32, 0}});
+//    tcpHeader->addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT8, 7}});
 
     qDebug().noquote() << tcpHeader->getOptionsAsText();
-    //tcpHeader.debugHex();
-    //tcpHeader.debugBin();
+    //tcpHeader->debugHex();
+    //tcpHeader->debugBin();
 
     qDebug() << "URG" << tcpHeader->isUrg();
     qDebug() << "ACK" << tcpHeader->isAck();
@@ -149,12 +149,12 @@ int main(int argc, char** argv)
     network::NetPacket tcpPack{tcpHeader};
     std::jthread listenThread{&rawListener};
 
-    std::shared_ptr<UdpHeader> udpHead = std::make_shared<UdpHeader>(sourceAddress.s_addr, targetAddress.s_addr);
+    std::shared_ptr<UdpHeader> udpHead = std::make_shared<UdpHeader>(sourceIP, destIP);
     udpHead->setSrcPort(48000);
     udpHead->setDstPort(80);
     udpHead->setPayloadBytesLength(0);
 
-    //udpHead.debugHex();
+    //udpHead->debugHex();
 
     network::NetPacket udpPack{std::move(udpHead)};
 

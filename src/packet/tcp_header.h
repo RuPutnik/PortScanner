@@ -52,6 +52,7 @@ public:
     //20 байт минимальный размер заголовка (без опций) и 40 байт максимальный размер опций в заголовке
     const static inline uint32_t maxTcpHeaderLenBytes = 60;
 
+    TcpHeader(const std::string& sourceIp, const std::string& destinationIp);
     TcpHeader(uint32_t sourceIp, uint32_t destinationIp);
 
     uint16_t getSrcPort() const;
