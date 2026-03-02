@@ -49,7 +49,7 @@ std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(int fileDescr
 
     std::vector<unsigned char> dataResult;
     dataResult.reserve(static_cast<unsigned long>(amountBytes));
-    std::copy(buff, buff + amountBytes, dataResult.data());
+    std::copy(buff, buff + amountBytes, std::back_inserter(dataResult));
 
     return {dataResult, 0};
 }
