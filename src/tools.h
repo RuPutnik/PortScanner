@@ -102,6 +102,68 @@ inline std::vector<std::string> resolveHostname(const std::string& hostName)
     return addresses;
 }
 
+class unexp_token{};
+
+template<class DataType, class ErrType = uint32_t>
+class expected
+{
+    template<class E>
+    friend expected<unexp_token, E> unexpected(const E& e);
+public:
+    expected(const DataType& dt):
+        data{dt}
+    {}
+
+    template<class E>
+    expected(const expected<unexp_token, E>& e):
+        error{e.getError()}
+    {}
+
+    const std::optional<DataType>& getData() const
+    {
+        return data;
+    }
+
+    const std::optional<ErrType>& getError() const
+    {
+        return error;
+    }
+
+    bool hasValue() const
+    {
+        return data.has_value();
+    }
+
+    bool hasError() const
+    {
+        return error.has_value();
+    }
+
+    DataType* operator->()
+    {
+        if(data.has_value())
+            return &data;
+        else
+            return nullptr;
+    }
+
+private:
+    expected(const ErrType& e):
+        error{e}
+    {}
+
+
+
+    std::optional<DataType> data;
+    std::optional<ErrType> error;
+};
+
+template<class ErrType>
+expected<unexp_token, ErrType> unexpected(const ErrType& e)
+{
+    return {e};
+}
+
 }
 
 #endif // TOOLS_H

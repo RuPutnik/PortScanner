@@ -38,9 +38,8 @@ public:
 
 };
 
-//TODO use std::expected<>
-[[maybe_unused]] std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(int fileDescriptor, NetPacket packet, const std::string& ipv4Address, int flags = 0);
-[[maybe_unused]] std::pair<std::optional<ssize_t>, uint32_t> sendPacketTo(const Socket& socket, NetPacket packet, const std::string& ipv4Address, int flags = 0);
+[[maybe_unused]] network::expected<ssize_t, uint32_t> sendPacketTo(int fileDescriptor, NetPacket packet, const std::string& ipv4Address, int flags = 0);
+[[maybe_unused]] network::expected<ssize_t, uint32_t> sendPacketTo(const Socket& socket, NetPacket packet, const std::string& ipv4Address, int flags = 0);
 
 [[maybe_unused]] std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(int fileDescriptor, int flags = 0);
 [[maybe_unused]] std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(const Socket& socket, int flags = 0);
