@@ -81,6 +81,9 @@ inline std::vector<std::string> resolveHostname(const std::string& hostName)
 {
     const hostent* result = gethostbyname(hostName.data());
 
+    if(!result)
+        return {};
+
     std::vector<std::string> addresses;
 
     for(int i = 0;; i++){
@@ -137,6 +140,11 @@ public:
     bool hasError() const
     {
         return error.has_value();
+    }
+
+    operator bool() const
+    {
+        return hasValue();
     }
 
     DataType* operator->()

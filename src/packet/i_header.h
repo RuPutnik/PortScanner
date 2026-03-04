@@ -25,6 +25,9 @@ public:
     virtual void debugBin() const = 0;
     virtual uint16_t getProtoId() const = 0;
     virtual std::shared_ptr<IHeader> clone() = 0;
+    virtual std::optional<std::pair<uint32_t, uint32_t>> getIPv4Addresses() const;
+    std::string getSourceIP() const;
+    std::string getTargetIP() const;
 
 protected:
     struct PseudoIpHeader final

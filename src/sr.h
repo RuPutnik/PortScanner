@@ -13,7 +13,8 @@ enum class PACKET_TYPE : int
 {
     ICMP = IPPROTO_ICMP,
     TCP = IPPROTO_TCP,
-    UDP = IPPROTO_UDP
+    UDP = IPPROTO_UDP,
+    ANY = IPPROTO_RAW //TODO ?
 };
 
 class Socket

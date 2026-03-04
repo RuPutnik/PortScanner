@@ -56,6 +56,21 @@ public:
         return *this;
     }
 
+    uint32_t getLengthPayload() const
+    {
+        return lengthPayload;
+    }
+
+    std::shared_ptr<const char[]> getPayload() const
+    {
+        return payload;
+    }
+
+    std::shared_ptr<const IHeader> getHeader() const
+    {
+        return header;
+    }
+
     NetPacket& operator=(NetPacket&&) noexcept = default;
 
     uint32_t getBytesLength() const

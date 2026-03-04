@@ -40,6 +40,27 @@ uint16_t IHeader::lengthBytes() const
     return static_cast<uint16_t>(headerFormat.getLength());
 }
 
+std::optional<std::pair<uint32_t, uint32_t> > IHeader::getIPv4Addresses() const
+{
+    return ipAdresses;
+}
+
+std::string IHeader::getSourceIP() const
+{
+    if(!ipAdresses || ipAdresses->first == 0)
+        return "";
+
+    return inet_ntoa(in_addr{ipAdresses->first});
+}
+
+std::string IHeader::getTargetIP() const
+{
+    if(!ipAdresses || ipAdresses->second == 0)
+        return "";
+
+    return inet_ntoa(in_addr{ipAdresses->second});
+}
+
 uint32_t IHeader::generateRandomNumber_() const
 {
     const auto time_since_epoch = std::chrono::steady_clock::now().time_since_epoch();
