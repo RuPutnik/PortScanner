@@ -201,7 +201,7 @@ void TcpHeader::debugHex() const
     if(!headerOptions.empty()){
         qDebug().noquote() << " OPTIONS";
 
-        for(uint32_t i = bitSize(20), end = bitSize(headerFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
+        for(uint32_t i = bitSize(minIpHeaderLenBytes), end = bitSize(headerFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
             qDebug().noquote() << "0x" + QString::number(headerFormat.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 16).rightJustified(8, '0');
         }
     }
@@ -232,7 +232,7 @@ void TcpHeader::debugBin() const
     if(!headerOptions.empty()){
         qDebug().noquote() << "             OPTIONS";
 
-        for(uint32_t i = bitSize(20), end = bitSize(headerFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
+        for(uint32_t i = bitSize(minIpHeaderLenBytes), end = bitSize(headerFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
             qDebug().noquote() << "0b" + QString::number(headerFormat.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 2).rightJustified(bitSize<uint32_t>(), '0');
         }
     }

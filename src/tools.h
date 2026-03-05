@@ -1,6 +1,7 @@
 #ifndef TOOLS_H
 #define TOOLS_H
 
+#include <arpa/inet.h>
 #include <cstdint>
 #include <string>
 #include <limits>
@@ -16,6 +17,10 @@
 
 namespace network {
 
+const inline uint32_t minIpHeaderLenBytes = 20;
+constexpr static inline uint32_t maxTransportPacketLenBytes = ETH_DATA_LEN - minIpHeaderLenBytes;  // = 1480
+const inline uint32_t wordByteSize = 4;
+
 template<class T>
 [[maybe_unused]] constexpr static inline uint64_t bitSize() noexcept{
     static_assert(sizeof(T) <= std::numeric_limits<uint32_t>::max(), "Вычисляемое значение больше максимального значения uint32_t");
@@ -25,10 +30,6 @@ template<class T>
 [[maybe_unused]] constexpr static inline uint64_t bitSize(uint32_t amountBytes) noexcept{
     return __CHAR_BIT__ * amountBytes;
 }
-
-const inline uint32_t minIpHeaderLenBytes = 20;
-constexpr static inline uint32_t maxTransportPacketLenBytes = ETH_DATA_LEN - minIpHeaderLenBytes;  // = 1480
-const inline uint32_t wordByteSize = 4;
 
 inline std::string getDefaultEthIface()
 {
@@ -54,30 +55,25 @@ inline std::string getDefaultEthIface()
     return mainEthIfaceName;
 }
 
-inline std::string getCurrentIpAddress()
+[[maybe_unused]] inline std::string getCurrentIpAddress()
 {
     const int fdSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    std::string ipAddress(INET_ADDRSTRLEN, 0);
 
     const std::string ifname = getDefaultEthIface();
 
-    class ifreq ifr = {0};
-    snprintf(ifr.ifr_name, IFNAMSIZ, "%s", ifname.c_str());
+    class ifreq ifr;
+    strcpy(ifr.ifr_name, ifname.c_str());
 
     ioctl(fdSocket, SIOCGIFADDR, &ifr);
 
-    sprintf(ipAddress.data(), "%hhu.%hhu.%hhu.%hhu",
-            static_cast<unsigned char>(ifr.ifr_addr.sa_data[2]),
-            static_cast<unsigned char>(ifr.ifr_addr.sa_data[3]),
-            static_cast<unsigned char>(ifr.ifr_addr.sa_data[4]),
-            static_cast<unsigned char>(ifr.ifr_addr.sa_data[5])
-            );
+    uint32_t currAddrDigital;
+    memcpy(&currAddrDigital, ifr.ifr_addr.sa_data + 2, 4);
 
     close(fdSocket);
-    return ipAddress;
+    return inet_ntoa(in_addr{currAddrDigital});
 }
 
-inline std::vector<std::string> resolveHostname(const std::string& hostName)
+[[maybe_unused]] inline std::vector<std::string> resolveHostname(const std::string& hostName)
 {
     const hostent* result = gethostbyname(hostName.data());
 
@@ -90,16 +86,10 @@ inline std::vector<std::string> resolveHostname(const std::string& hostName)
         const char* const currAddr = result->h_addr_list[i];
         if(currAddr == nullptr) break;
 
-        std::string currCanonicalAddress(INET_ADDRSTRLEN, 0);
+        uint32_t currAddrDigital;
+        memcpy(&currAddrDigital, currAddr, static_cast<size_t>(result->h_length));
 
-        sprintf(currCanonicalAddress.data(), "%hhu.%hhu.%hhu.%hhu",
-                static_cast<unsigned char>(currAddr[0]),
-                static_cast<unsigned char>(currAddr[1]),
-                static_cast<unsigned char>(currAddr[2]),
-                static_cast<unsigned char>(currAddr[3])
-                );
-
-        addresses.push_back(currCanonicalAddress);
+        addresses.emplace_back(inet_ntoa(in_addr{currAddrDigital}));
     }
 
     return addresses;
@@ -159,8 +149,6 @@ private:
     expected(const ErrType& e):
         error{e}
     {}
-
-
 
     std::optional<DataType> data;
     std::optional<ErrType> error;

@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     //QCoreApplication a(argc, argv);
 
 
-/*
+
    in_addr sourceAddress, targetAddress;
    if(inet_pton(AF_INET, destIP.data(), &targetAddress.s_addr) < 0){
        perror("Error format IPv4 address");
@@ -151,13 +151,13 @@ int main(int argc, char** argv)
 
     qDebug() << targetAddress.s_addr;
     qDebug() << sourceIpAddress.data();
-    qDebug() << targetIpAddress.data();*/
+    qDebug() << targetIpAddress.data();
 
    // if(inet_pton(AF_INET, sourceIP, &sourceAddress.s_addr) < 0){
    //     perror("Error format IPv4 address");
    //     return errno;
    // }
-
+/*
     std::shared_ptr<TcpHeader> tcpHeader = std::make_shared<TcpHeader>(sourceIP, destIP);
     tcpHeader->setSrcPort(48000);
     tcpHeader->setDstPort(80);
@@ -214,7 +214,7 @@ int main(int argc, char** argv)
             perror("packet send error:");
         }
     }
-
+*/
 
     return 0;//a.exec();
 }

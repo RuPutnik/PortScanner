@@ -14,10 +14,9 @@ IpHeader::IpHeader():
     }}}
 {}
 
-
 uint16_t IpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
 {
-    const uint16_t lengthIpHeaderBytes = 4 * (dataPacket[0] & 0x0F); //Берем только 4 млашдших бита первого байта
+    const uint16_t lengthIpHeaderBytes = wordByteSize * (dataPacket[0] & 0x0F); //Берем только 4 младших бита первого байта
 
     if(lengthIpHeaderBytes > headerFormat.getLength()){
         headerFormat.appendField({"options", static_cast<uint32_t>(bitSize(lengthIpHeaderBytes - headerFormat.getLength()))});
@@ -65,7 +64,7 @@ uint32_t IpHeader::getTargetIP() const
 
 uint16_t IpHeader::getHeaderLength() const
 {
-    return headerFormat.readFieldValue<uint8_t>("ihl") * 4;
+    return headerFormat.readFieldValue<uint8_t>("ihl") * wordByteSize;
 }
 
 std::shared_ptr<IHeader> IpHeader::clone()
