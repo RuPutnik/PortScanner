@@ -37,6 +37,9 @@ public:
 
     uint16_t setHeaderData(const std::vector<unsigned char>& dataPacket) override;
 
+private:
+    bool considerPseudoHeaderCalcCksum() const override;
+
 };
 
 }

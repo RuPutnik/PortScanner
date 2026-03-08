@@ -31,21 +31,40 @@ public:
 
         const auto header = incomingNetData.getHeader();
 
-        const auto tcpHeader = std::static_pointer_cast<const TcpHeader>(header);
-
         qDebug() << "Proto ID:  " << header->getProtoId();
         qDebug() << "Source IP: " << header->getSourceIP();
         qDebug() << "Target IP: " << header->getTargetIP();
 
-        qDebug() << "Source Port" << tcpHeader->getSrcPort();
-        qDebug() << "Target Port" << tcpHeader->getDstPort();
+        switch (static_cast<PACKET_TYPE>(header->getProtoId())) {
+        case PACKET_TYPE::TCP:{
+            const auto tcpHeader = std::dynamic_pointer_cast<const TcpHeader>(header);
 
-        qDebug() << "URG" << tcpHeader->isUrg();
-        qDebug() << "ACK" << tcpHeader->isAck();
-        qDebug() << "PSH" << tcpHeader->isPsh();
-        qDebug() << "RST" << tcpHeader->isRst();
-        qDebug() << "SYN" << tcpHeader->isSyn();
-        qDebug() << "FIN" << tcpHeader->isFin();
+            qDebug() << "Source Port" << tcpHeader->getSrcPort();
+            qDebug() << "Target Port" << tcpHeader->getDstPort();
+
+            qDebug() << "URG" << tcpHeader->isUrg();
+            qDebug() << "ACK" << tcpHeader->isAck();
+            qDebug() << "PSH" << tcpHeader->isPsh();
+            qDebug() << "RST" << tcpHeader->isRst();
+            qDebug() << "SYN" << tcpHeader->isSyn();
+            qDebug() << "FIN" << tcpHeader->isFin();
+            break;
+        }
+        case PACKET_TYPE::ICMP:{
+            const auto icmpHeader = std::dynamic_pointer_cast<const IcmpHeader>(header);
+
+            incomingNetData.debugAsciiPayload();
+            break;
+        }
+        default:
+            break;
+        }
+
+
+
+
+
+
     }
 };
 
@@ -71,7 +90,7 @@ void rawListener()
    // [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::TCP}, printerRawData, b);
 
     std::atomic<bool> b = true;
-    [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::TCP}, new PacketAnalyzer, b);
+    [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::ICMP}, new PacketAnalyzer, b);
 }
 /*
 void fakeListener()

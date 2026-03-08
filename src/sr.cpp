@@ -39,10 +39,9 @@ std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(int fileDescr
         return {{}, errno};
     }
 
-    constexpr size_t sizeMsg = ETH_DATA_LEN;
-    unsigned char buff[sizeMsg];
+    unsigned char buff[ETH_DATA_LEN];
 
-    const auto amountBytes = recvfrom(fileDescriptor, buff, sizeMsg, flags, nullptr, nullptr);
+    const auto amountBytes = recvfrom(fileDescriptor, buff, ETH_DATA_LEN, flags, nullptr, nullptr);
     if(amountBytes <= 0){
         return {{}, errno};
     }

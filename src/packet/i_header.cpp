@@ -74,7 +74,7 @@ uint16_t IHeader::calcCheckSum(const std::shared_ptr<char[]>& payloadPacket, uin
 {
     const uint32_t packetTotalLenBytes = lengthBytes() + payloadLenBytes;
 
-    const uint32_t sizePseudoHeader = isSetIpAdresses() ? sizeof(PseudoIpHeader) : 0; //Если адреса не заданы, то использовать псевдо заголовок IP не нужно
+    const uint32_t sizePseudoHeader = considerPseudoHeaderCalcCksum() ? sizeof(PseudoIpHeader) : 0;
 
     const uint32_t lenBytesBuffDataPacket = sizePseudoHeader + packetTotalLenBytes;
 

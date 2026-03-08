@@ -130,18 +130,25 @@ public:
     void debugPayload() const
     {
         qDebug().noquote() << "---Payload---";
-//        for(std::size_t i = 0; i < vec.size(); i++){
-//            word += QString::number(vec[i], 16).rightJustified(2, '0');
-//            if((i+1) % 4 == 0) {
-//                qDebug().noquote() << "0x" + word;
-//                word.clear();
-//            }
-//        }
         QString word;
         for(std::size_t i = 0; i < lengthPayload; i++){
             word += QString::number(static_cast<unsigned char>(payload[i]), 16).rightJustified(2, '0');
             if((i+1) % 4 == 0 || i == lengthPayload - 1) {
                 qDebug().noquote() << "0x" + word;
+                word.clear();
+            }
+        }
+        qDebug().noquote() << "-------------";
+    }
+
+    void debugAsciiPayload() const
+    {
+        qDebug().noquote() << "---Payload---";
+        QString word;
+        for(std::size_t i = 0; i < lengthPayload; i++){
+            word += payload[i];
+            if((i+1) % 4 == 0 || i == lengthPayload - 1) {
+                qDebug().noquote() << word;
                 word.clear();
             }
         }

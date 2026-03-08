@@ -272,6 +272,11 @@ uint16_t IcmpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
     return static_cast<uint16_t>(headerFormat.getLength());
 }
 
+bool IcmpHeader::considerPseudoHeaderCalcCksum() const
+{
+    return false;
+}
+
 std::shared_ptr<IHeader> IcmpHeader::clone()
 {
     return std::shared_ptr<IcmpHeader>(new IcmpHeader(*this));

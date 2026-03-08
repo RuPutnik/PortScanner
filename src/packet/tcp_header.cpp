@@ -383,6 +383,11 @@ int TcpHeader::calcNearDivisibleWithoutRemainder(int value, int delimeter)
     return nearestDivisible;
 }
 
+bool TcpHeader::considerPseudoHeaderCalcCksum() const
+{
+    return true;
+}
+
 uint32_t TcpHeader::maxPayloadLengthBytes() const
 {
     return maxTransportPacketLenBytes - TcpHeader::maxTcpHeaderLenBytes; // = 1420 байт, 355 слов (4 байта)

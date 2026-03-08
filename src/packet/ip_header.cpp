@@ -67,6 +67,11 @@ uint16_t IpHeader::getHeaderLength() const
     return headerFormat.readFieldValue<uint8_t>("ihl") * netWordByteLen;
 }
 
+bool IpHeader::considerPseudoHeaderCalcCksum() const
+{
+    return false;
+}
+
 std::shared_ptr<IHeader> IpHeader::clone()
 {
     return std::shared_ptr<IpHeader>(new IpHeader{*this});

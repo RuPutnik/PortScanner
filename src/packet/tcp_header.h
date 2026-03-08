@@ -127,6 +127,7 @@ private:
     void appendNopOptions(const OptionData& option);
     void appendEndOptionsBytes();
     int calcNearDivisibleWithoutRemainder(int value, int delimeter = sizeof(uint32_t));
+    bool considerPseudoHeaderCalcCksum() const override;
 
 };
 

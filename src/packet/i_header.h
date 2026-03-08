@@ -19,6 +19,7 @@ public:
 
     virtual uint16_t setHeaderData(const std::vector<unsigned char>& dataPacket) = 0; //Метод виртуальный, т.к. некоторые заголовки могут иметь плавающий размер
     virtual std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes) = 0;
+
     uint16_t lengthBytes() const;
     virtual uint32_t maxPayloadLengthBytes() const = 0;
     virtual void debugHex() const = 0;
@@ -53,6 +54,7 @@ protected:
 
 private:
     uint32_t generateRandomNumber_() const;
+    virtual bool considerPseudoHeaderCalcCksum() const = 0;
     uint16_t calcCheckSum_(uint16_t *buff, uint32_t buffByteSize) const;
     bool isSetIpAdresses() const;
 

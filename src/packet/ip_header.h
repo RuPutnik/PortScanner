@@ -22,6 +22,9 @@ public:
     uint32_t getTargetIP() const;
     uint16_t getHeaderLength() const;
 
+private:
+    bool considerPseudoHeaderCalcCksum() const override;
+
 };
 
 }

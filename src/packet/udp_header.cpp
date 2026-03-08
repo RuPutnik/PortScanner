@@ -114,6 +114,11 @@ uint16_t UdpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
     return static_cast<uint16_t>(headerFormat.getLength());
 }
 
+bool UdpHeader::considerPseudoHeaderCalcCksum() const
+{
+    return true;
+}
+
 std::shared_ptr<IHeader> UdpHeader::clone()
 {
     return std::shared_ptr<UdpHeader>(new UdpHeader(*this));

@@ -4,7 +4,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#include "packet/i_header.h"
 #include "packet/net_packet.h"
 
 namespace network {
@@ -14,7 +13,7 @@ enum class PACKET_TYPE : int
     ICMP = IPPROTO_ICMP,
     TCP = IPPROTO_TCP,
     UDP = IPPROTO_UDP,
-    ANY = IPPROTO_RAW //TODO ?
+    ANY = IPPROTO_IP //TODO ?
 };
 
 class Socket
