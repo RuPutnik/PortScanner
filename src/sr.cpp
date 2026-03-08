@@ -110,9 +110,9 @@ uint32_t blockingReadPackets(const Socket &socket, IPacketHandler *packetHandler
 void IPacketHandler::handleData(const std::vector<unsigned char>& incomingNetData)
 {
     const auto resolvedPacket = resolvePacket(incomingNetData);
-    qDebug() << "Incoming Packet Proto ID: " << resolvedPacket->getProtoId();
 
     if(resolvedPacket.has_value()){
+        qDebug() << "Incoming Packet Proto ID: " << resolvedPacket->getProtoId();
         handlePacket(std::move(resolvedPacket.value()));
     }else{
         qDebug() << "Unknown type packet!";
@@ -132,8 +132,8 @@ std::optional<NetPacket> IPacketHandler::resolvePacket(std::vector<unsigned char
     incomingNetData.erase(std::begin(incomingNetData), std::begin(incomingNetData) + lengthIpHeaderBytes);
 
     std::shared_ptr<IHeader> packetHeader;
-    const uint32_t sourceIp = ipHeader.getSourceIP();
-    const uint32_t targetIp = ipHeader.getTargetIP();
+    const uint32_t sourceIp = ntohl(ipHeader.getSourceIP()); //Не забываем переворачивать из сетевого порядка
+    const uint32_t targetIp = ntohl(ipHeader.getTargetIP());
 
     switch (static_cast<PACKET_TYPE>(ipHeader.getProtoId())) {
     case PACKET_TYPE::TCP:

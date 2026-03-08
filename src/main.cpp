@@ -27,20 +27,32 @@ class PacketAnalyzer final : public IPacketHandler
 public:
     void handlePacket(const NetPacket& incomingNetData) override
     {
-        incomingNetData.debugHex();
+        //incomingNetData.debugHex();
 
         const auto header = incomingNetData.getHeader();
+
+        const auto tcpHeader = std::static_pointer_cast<const TcpHeader>(header);
 
         qDebug() << "Proto ID:  " << header->getProtoId();
         qDebug() << "Source IP: " << header->getSourceIP();
         qDebug() << "Target IP: " << header->getTargetIP();
+
+        qDebug() << "Source Port" << tcpHeader->getSrcPort();
+        qDebug() << "Target Port" << tcpHeader->getDstPort();
+
+        qDebug() << "URG" << tcpHeader->isUrg();
+        qDebug() << "ACK" << tcpHeader->isAck();
+        qDebug() << "PSH" << tcpHeader->isPsh();
+        qDebug() << "RST" << tcpHeader->isRst();
+        qDebug() << "SYN" << tcpHeader->isSyn();
+        qDebug() << "FIN" << tcpHeader->isFin();
     }
 };
 
 void rawListener()
 {
     qDebug() << "Запущен поток слушателя";
-/*
+
     const auto printerRawData = [](const std::vector<unsigned char>& vec){
         qDebug() << "Получено байт: " << vec.size();
         QString word;
@@ -55,11 +67,11 @@ void rawListener()
         qDebug() << "\n";
     };
 
+   // std::atomic<bool> b = true;
+   // [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::TCP}, printerRawData, b);
+
     std::atomic<bool> b = true;
-    [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::ICMP}, printerRawData, b);
-*/
-    std::atomic<bool> b = true;
-    [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::ICMP}, new PacketAnalyzer, b);
+    [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::TCP}, new PacketAnalyzer, b);
 }
 /*
 void fakeListener()
@@ -135,29 +147,29 @@ int main(int argc, char** argv)
 
 
 
-   in_addr sourceAddress, targetAddress;
-   if(inet_pton(AF_INET, destIP.data(), &targetAddress.s_addr) < 0){
-       perror("Error format IPv4 address");
-       return errno;
-   }
+//   in_addr sourceAddress, targetAddress;
+//   if(inet_pton(AF_INET, destIP.data(), &targetAddress.s_addr) < 0){
+//       perror("Error format IPv4 address");
+//       return errno;
+//   }
 
-   if(inet_pton(AF_INET, sourceIP.data(), &sourceAddress.s_addr) < 0){
-       perror("Error format IPv4 address");
-       return errno;
-   }
+//   if(inet_pton(AF_INET, sourceIP.data(), &sourceAddress.s_addr) < 0){
+//       perror("Error format IPv4 address");
+//       return errno;
+//   }
 
-   std::string sourceIpAddress = inet_ntoa(in_addr{sourceAddress});
-   std::string targetIpAddress = inet_ntoa(in_addr{targetAddress});
+//   std::string sourceIpAddress = inet_ntoa(in_addr{sourceAddress});
+//   std::string targetIpAddress = inet_ntoa(in_addr{targetAddress});
 
-    qDebug() << targetAddress.s_addr;
-    qDebug() << sourceIpAddress.data();
-    qDebug() << targetIpAddress.data();
+//    qDebug() << targetAddress.s_addr;
+//    qDebug() << sourceIpAddress.data();
+//    qDebug() << targetIpAddress.data();
 
    // if(inet_pton(AF_INET, sourceIP, &sourceAddress.s_addr) < 0){
    //     perror("Error format IPv4 address");
    //     return errno;
    // }
-/*
+
     std::shared_ptr<TcpHeader> tcpHeader = std::make_shared<TcpHeader>(sourceIP, destIP);
     tcpHeader->setSrcPort(48000);
     tcpHeader->setDstPort(80);
@@ -214,7 +226,7 @@ int main(int argc, char** argv)
             perror("packet send error:");
         }
     }
-*/
+
 
     return 0;//a.exec();
 }

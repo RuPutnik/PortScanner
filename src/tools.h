@@ -19,7 +19,7 @@ namespace network {
 
 const inline uint32_t minIpHeaderLenBytes = 20;
 constexpr static inline uint32_t maxTransportPacketLenBytes = ETH_DATA_LEN - minIpHeaderLenBytes;  // = 1480
-const inline uint32_t wordByteSize = 4;
+const inline uint32_t netWordByteLen = 4;
 
 template<class T>
 [[maybe_unused]] constexpr static inline uint64_t bitSize() noexcept{

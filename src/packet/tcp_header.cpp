@@ -397,7 +397,7 @@ uint16_t TcpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
 {
     headerFormat.setInternalBufferValues(dataPacket.data());
 
-    const uint16_t incomingHeaderLenBytes = getHdrLen() * wordByteSize;
+    const uint16_t incomingHeaderLenBytes = getHdrLen() * netWordByteLen;
 
     //Если длина заголовка, прочитанная из входящих данных больше длины стандартного заголовка без опций
     if(incomingHeaderLenBytes > headerFormat.getLength())
