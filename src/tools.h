@@ -5,15 +5,15 @@
 #include <cstdint>
 #include <string>
 #include <limits>
+#include <ranges>
 #include <linux/if_ether.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <netdb.h>
 #include <fstream>
 #include <netinet/in.h>
-
-
-#include <QDebug>
+#include <sstream>
+#include <regex>
 
 namespace network {
 
@@ -39,16 +39,29 @@ inline std::string getDefaultEthIface()
     }
 
     std::string mainEthIfaceName;
-    std::string ethsInfoData;
+    std::string currEthInfoData;
+    std::string currEthInfoCurrParam;
 
-    while(std::getline(procNetRoute, ethsInfoData, '\n')){
-        QStringList params = QString{ethsInfoData.c_str()}.simplified().split(" ");
-        if(params.size() < 4)
+    while(std::getline(procNetRoute, currEthInfoData, '\n')){
+        currEthInfoData = std::regex_replace(currEthInfoData, std::regex{"[\\s\\t]+"}, " ");
+
+        std::stringstream currEthLineStream{currEthInfoData};
+        std::vector<std::string> ethParams;
+
+        while (std::getline(currEthLineStream, currEthInfoCurrParam, ' ')) {
+            ethParams.push_back(currEthInfoCurrParam);
+        }
+
+        if(ethParams.size() < 4)
             continue;
 
-        if(params[1].toInt() == 0 && (params[3].toInt() & 0x3)){
-            mainEthIfaceName = params[0].toStdString();
-            break;
+        try{
+            if(std::stoi(ethParams[1]) == 0 && (std::stoi(ethParams[3]) & 0x3)){
+                mainEthIfaceName = ethParams[0];
+                break;
+            }
+        }catch(const std::invalid_argument& iae){
+            continue;
         }
     }
 

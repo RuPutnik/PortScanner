@@ -58,6 +58,7 @@ public:
             break;
         }
         default:
+            qDebug() << "Unknown proto!!";
             break;
         }
     }
@@ -80,9 +81,6 @@ void rawListener()
         }
         qDebug() << "\n";
     };
-
-   // std::atomic<bool> b = true;
-   // [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::TCP}, printerRawData, b);
 
     std::atomic<bool> b = true;
     [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::ICMP}, new PacketAnalyzer, b);

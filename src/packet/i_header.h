@@ -36,10 +36,10 @@ protected:
     {
         PseudoIpHeader(uint16_t protoId, uint32_t ipSource, uint32_t ipDestination, uint16_t packetLengthBytes);
 
-        uint32_t srcIp;
-        uint32_t dstIp;
+        const uint32_t srcIp;
+        const uint32_t dstIp;
         const uint16_t protoId;
-        uint16_t tcpByteLen;
+        const uint16_t tcpByteLen;
     };
 
     kivk_lib::Protocol headerFormat;
