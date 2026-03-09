@@ -25,13 +25,14 @@ const std::string destIP = network::resolveHostname("www.hiking.com.hk").front()
 class PacketAnalyzer final : public IPacketHandler
 {
 public:
-    void handlePacket(const NetPacket& incomingNetData) override
+    void handlePacket(const NetPacket& incomingNetPacket) override
     {
         //incomingNetData.debugHex();
 
-        const auto header = incomingNetData.getHeader();
+        const auto header = incomingNetPacket.getHeader();
 
         qDebug() << "Proto ID:  " << header->getProtoId();
+        qDebug() << "Proto name:  " << header->getProtoName();
         qDebug() << "Source IP: " << header->getSourceIP();
         qDebug() << "Target IP: " << header->getTargetIP();
 
@@ -53,18 +54,12 @@ public:
         case PACKET_TYPE::ICMP:{
             const auto icmpHeader = std::dynamic_pointer_cast<const IcmpHeader>(header);
 
-            incomingNetData.debugAsciiPayload();
+            incomingNetPacket.debugAsciiPayload();
             break;
         }
         default:
             break;
         }
-
-
-
-
-
-
     }
 };
 

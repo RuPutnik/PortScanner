@@ -29,6 +29,7 @@ public:
     virtual std::optional<std::pair<uint32_t, uint32_t>> getIPv4Addresses() const;
     std::string getSourceIP() const;
     std::string getTargetIP() const;
+    std::string getProtoName() const;
 
 protected:
     struct PseudoIpHeader final

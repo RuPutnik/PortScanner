@@ -61,6 +61,13 @@ std::string IHeader::getTargetIP() const
     return inet_ntoa(in_addr{ipAdresses->second});
 }
 
+std::string IHeader::getProtoName() const
+{
+    const protoent* const currProtoInfo = getprotobynumber(getProtoId());
+
+    return {currProtoInfo->p_name};
+}
+
 uint32_t IHeader::generateRandomNumber_() const
 {
     const auto time_since_epoch = std::chrono::steady_clock::now().time_since_epoch();
