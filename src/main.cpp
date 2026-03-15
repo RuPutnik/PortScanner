@@ -54,7 +54,7 @@ public:
         case PACKET_TYPE::ICMP:{
             const auto icmpHeader = std::dynamic_pointer_cast<const IcmpHeader>(header);
 
-            incomingNetPacket.debugAsciiPayload();
+            icmpHeader->debugHex();
             break;
         }
         default:

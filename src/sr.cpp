@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <string>
 #include <ranges>
+#include <atomic>
 
 #include "packet/icmp_header.h"
 #include "packet/tcp_header.h"
@@ -13,7 +14,8 @@ namespace network {
 
 Socket::Socket(PACKET_TYPE type)
 {
-    socketFd = socket(AF_INET, SOCK_RAW, static_cast<int>(type));
+    socketFd = socket(PF_INET, SOCK_RAW, static_cast<int>(type));
+
     if(socketFd < 0){
         throw std::runtime_error{std::string{"Error create raw socket: "} + std::to_string(errno)};
     }
@@ -111,10 +113,10 @@ void IPacketHandler::handleData(const std::vector<unsigned char>& incomingNetDat
     const auto resolvedPacket = resolvePacket(incomingNetData);
 
     if(resolvedPacket.has_value()){
-        qDebug() << "Incoming Packet Proto ID: " << resolvedPacket->getProtoId();
+        std::cout << "Incoming Packet Proto ID: " << resolvedPacket->getProtoId() << std::endl;
         handlePacket(std::move(resolvedPacket.value()));
     }else{
-        qDebug() << "Unknown type packet!";
+        std::cout << "Unknown type packet!" << std::endl;
     }
 }
 
@@ -127,6 +129,9 @@ std::optional<NetPacket> IPacketHandler::resolvePacket(std::vector<unsigned char
     IpHeader ipHeader;
 
     const uint16_t lengthIpHeaderBytes = ipHeader.setHeaderData(incomingNetData);
+
+    ipHeader.debugBin();
+    ipHeader.debugHex();
 
     incomingNetData.erase(std::begin(incomingNetData), std::begin(incomingNetData) + lengthIpHeaderBytes);
 

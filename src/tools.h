@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <sstream>
 #include <regex>
+#include <iostream>
 
 namespace network {
 

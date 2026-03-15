@@ -1,9 +1,6 @@
 #ifndef NET_PACKET_H
 #define NET_PACKET_H
 
-#include <QString>
-#include <QDebug>
-
 #include <cstdint>
 #include <memory>
 
@@ -98,7 +95,7 @@ public:
     {
         const uint32_t lengthHeaderBytes = header->setHeaderData(data);
 
-        lengthPayload = data.size() - lengthHeaderBytes;
+        lengthPayload = static_cast<uint32_t>(data.size()) - lengthHeaderBytes;
 
         payload = std::shared_ptr<char[]>(new char[lengthPayload]);
 
@@ -129,30 +126,32 @@ public:
 
     void debugPayload() const
     {
-        qDebug().noquote() << "---Payload---";
-        QString word;
+        printf("---Payload---\n");
+        std::string word;
         for(std::size_t i = 0; i < lengthPayload; i++){
-            word += QString::number(static_cast<unsigned char>(payload[i]), 16).rightJustified(2, '0');
+            std::string tempPartword;
+            sprintf(tempPartword.data(), "%X", payload[static_cast<std::ptrdiff_t>(i)]);
+            word += tempPartword;
             if((i+1) % 4 == 0 || i == lengthPayload - 1) {
-                qDebug().noquote() << "0x" + word;
+                printf("0x%s\n", word.c_str());
                 word.clear();
             }
         }
-        qDebug().noquote() << "-------------";
+        printf("-------------\n");
     }
 
     void debugAsciiPayload() const
     {
-        qDebug().noquote() << "---Payload---";
-        QString word;
+        printf("---Payload---");
+        std::string word;
         for(std::size_t i = 0; i < lengthPayload; i++){
-            word += payload[i];
+            word += payload[static_cast<std::ptrdiff_t>(i)];
             if((i+1) % 4 == 0 || i == lengthPayload - 1) {
-                qDebug().noquote() << word;
+                printf("0x%s\n", word.c_str());
                 word.clear();
             }
         }
-        qDebug().noquote() << "-------------";
+        printf("-------------");
     }
 
     void debugHex() const

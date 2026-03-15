@@ -1,9 +1,8 @@
 #include "tcp_header.h"
 
-#include <QDebug>
-
 #include <netinet/in.h>
 #include <memory>
+#include <numeric>
 
 namespace network {
 
@@ -181,74 +180,47 @@ void TcpHeader::setUrgent(uint16_t newUrgent)
 
 void TcpHeader::debugHex() const
 {
-    qDebug().noquote() << "---TCP-HEADER---";
-    qDebug().noquote() << "   SP     DP ";
-    qDebug().noquote() << "0x" + QString::number(getSrcPort(), 16).rightJustified(4, '0') + " 0x" + QString::number(getDstPort(), 16).rightJustified(4, '0');
+    printf("---TCP-HEADER---\n");
+    printf("   SP     DP \n");
+    printf("0x%04X 0x%04X\n", getSrcPort(), getDstPort());
 
-    qDebug().noquote() << "  SEQ NUM";
-    qDebug().noquote() << "0x" + QString::number(getSeqNumber(), 16).rightJustified(8, '0');
+    printf("  SEQ NUM\n");
+    printf("0x%08X\n", getSeqNumber());
 
-    qDebug().noquote() << "  ACK NUM";
-    qDebug().noquote() << "0x" + QString::number(getAckNumber(), 16).rightJustified(8, '0');
+    printf("  ACK NUM\n");
+    printf("0x%08X\n", getAckNumber());
 
-    qDebug().noquote() << "HDL FLAGS  WSIZE";
-    qDebug().noquote() << "0x" + QString::number(getHdrLen(), 16).rightJustified(1, '0') + " 0x" +QString::number(getFlags(), 16).rightJustified(3, '0') + " 0x" +
-                                 QString::number(getWindowSize(), 16).rightJustified(4, '0');
+    printf("HDL FLAGS  WSIZE\n");
+    printf("0x%01X 0x%03X 0x%04X\n", getHdrLen(), getFlags(), getWindowSize());
 
-    qDebug().noquote() << " CHKS    URG ";
-    qDebug().noquote() << "0x" + QString::number(getChksum(), 16).rightJustified(4, '0') + " 0x" + QString::number(getUrgent(), 16).rightJustified(4, '0');
+    printf(" CHKS    URG \n");
+    printf("0x%04X 0x%04X\n", getChksum(), getUrgent());
 
     if(!headerOptions.empty()){
-        qDebug().noquote() << " OPTIONS";
+        printf(" OPTIONS\n");
 
-        for(uint32_t i = bitSize(minIpHeaderLenBytes), end = bitSize(headerFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
-            qDebug().noquote() << "0x" + QString::number(headerFormat.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 16).rightJustified(8, '0');
+        for(uint64_t i = bitSize(minIpHeaderLenBytes), end = bitSize(headerFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
+            printf("0x%08X\n", headerFormat.readGhostFieldValue<uint32_t>(static_cast<uint32_t>(i), bitSize<uint32_t>()));
         }
     }
 
-    qDebug().noquote() << "----------------";
+    printf("----------------");
 }
 
 void TcpHeader::debugBin() const
 {
-    qDebug().noquote() << "---------------TCP----HEADER---------------";
-
-    qDebug().noquote() << "    SOURCE PORT         DEST PORT ";
-    qDebug().noquote() << "0b" + QString::number(getSrcPort(), 2).rightJustified(16, '0') + " 0b" + QString::number(getDstPort(), 2).rightJustified(16, '0');
-
-    qDebug().noquote() << "          SEQUENCE NUMBER      ";
-    qDebug().noquote() << "0b" + QString::number(getSeqNumber(), 2).rightJustified(32, '0');
-
-    qDebug().noquote() << "        ACKNOWLEDGEMENT NUM";
-    qDebug().noquote() << "0b" + QString::number(getAckNumber(), 2).rightJustified(32, '0');
-
-    qDebug().noquote() << "HD LEN RESERVED   UAPRSF     WINDOW SIZE";
-    qDebug().noquote() << "0b" + QString::number(getHdrLen(), 2).rightJustified(4, '0') + " 0b000000" + " 0b" +QString::number(getFlags(), 2).rightJustified(6, '0') +
-                         " 0b" + QString::number(getWindowSize(), 2).rightJustified(16, '0');
-
-    qDebug().noquote() << "     CHECK SUMM           URGENT ";
-    qDebug().noquote() << "0b" + QString::number(getChksum(), 2).rightJustified(16, '0') + " 0b" + QString::number(getUrgent(), 2).rightJustified(16, '0');
-
-    if(!headerOptions.empty()){
-        qDebug().noquote() << "             OPTIONS";
-
-        for(uint32_t i = bitSize(minIpHeaderLenBytes), end = bitSize(headerFormat.getLength()); i < end; i+= bitSize<uint32_t>()){
-            qDebug().noquote() << "0b" + QString::number(headerFormat.readGhostFieldValue<uint32_t>(i, bitSize<uint32_t>()), 2).rightJustified(bitSize<uint32_t>(), '0');
-        }
-    }
-
-    qDebug().noquote() << "-------------------------------------------";
+    std::cout << headerFormat.getBinaryVisualization(true, 1, 2, 1, 32, true) << std::endl;
 }
 
 bool TcpHeader::addOption(Options option, const OptionValues& values, bool lastOption)
 {
     if(optionsFilled){
-        qDebug() << "Список опций уже сформирован";
+        std::cout << "Список опций уже сформирован" << std::endl;
         return false;
     }
 
     if(option == Options::NOP || option == Options::EndOptions){
-        qDebug() << "Опции NOP и EndOptions являются служебными и запрещены к явному добавлению";
+        std::cout << "Опции NOP и EndOptions являются служебными и запрещены к явному добавлению" << std::endl;
         return false;
     }
 
@@ -296,7 +268,7 @@ bool TcpHeader::setOptionValues(Options option, const OptionValues& values)
 {
     //Тут нет защиты от некорректного количества параметров (или от количества, которое отличается от того, что было указано при добавлении опции)
     if(option == Options::NOP || option == Options::EndOptions){
-        qDebug() << "Опции NOP и EndOptions являются служебными и запрещены к явному использованию";
+        std::cout << "Опции NOP и EndOptions являются служебными и запрещены к явному использованию" << std::endl;
         return false;
     }
 

@@ -27,9 +27,15 @@ uint16_t IpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
     return lengthIpHeaderBytes;
 }
 
-std::unique_ptr<const char[]> IpHeader::generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes)
+std::unique_ptr<const char[]> IpHeader::generateCompleteHeader([[maybe_unused]] const std::shared_ptr<char[]>& payload, [[maybe_unused]] uint32_t payloadLenBytes)
 {
-    //TODO
+    headerFormat.setFieldValue("chksum", calcCheckSum(nullptr, 0));
+
+    char* const rawDataHeader = new char[lengthBytes()];
+
+    memcpy(rawDataHeader, headerFormat.getInternalBuffer(), lengthBytes());
+
+    return std::unique_ptr<const char[]>{rawDataHeader};
 }
 
 uint32_t IpHeader::maxPayloadLengthBytes() const
@@ -39,17 +45,36 @@ uint32_t IpHeader::maxPayloadLengthBytes() const
 
 void IpHeader::debugHex() const
 {
- //TODO
+    printf("-----IP4-HEADER-----\n");
+    printf("Ver IHL  DE   PLen\n");
+    printf("0x%01X 0x%01X 0x%02X 0x%04X\n", headerFormat.readFieldValue<uint16_t>("version"), headerFormat.readFieldValue<uint8_t>("ihl"),
+                              headerFormat.readFieldValue<uint8_t>("dscp") + headerFormat.readFieldValue<uint8_t>("ecn"),
+                              getPacketLength());
+    printf("  Id  FLG+FOffset\n");
+    printf("0x%04X 0x%04X\n", headerFormat.readFieldValue<uint16_t>("id"),
+           headerFormat.readFieldValue<uint8_t>("flags") + headerFormat.readFieldValue<uint8_t>("fragmentOffset"));
+    printf("TTL  Prot  CHKS\n");
+    printf("0x%02X 0x%02X 0x%04X\n", getTTL(), getProtoId(), headerFormat.readFieldValue<uint16_t>("chksum"));
+    printf(" SourceIP \n");
+    printf("0x%08X\n", getSourceIP());
+    printf(" TargetIP \n");
+    printf("0x%08X\n", getTargetIP());
+    printf("--------------------\n");
 }
 
 void IpHeader::debugBin() const
 {
- //TODO
+    std::cout << headerFormat.getBinaryVisualization(true, 1, 2, 1, 32, true) << std::endl;
 }
 
 uint16_t IpHeader::getProtoId() const
 {
     return headerFormat.readFieldValue<uint16_t>("protocol");
+}
+
+uint8_t IpHeader::getTTL() const
+{
+    return headerFormat.readFieldValue<uint8_t>("ttl");
 }
 
 uint32_t IpHeader::getSourceIP() const
@@ -65,6 +90,11 @@ uint32_t IpHeader::getTargetIP() const
 uint16_t IpHeader::getHeaderLength() const
 {
     return headerFormat.readFieldValue<uint8_t>("ihl") * netWordByteLen;
+}
+
+uint16_t IpHeader::getPacketLength() const
+{
+    return headerFormat.readFieldValue<uint16_t>("packetLength");
 }
 
 bool IpHeader::considerPseudoHeaderCalcCksum() const

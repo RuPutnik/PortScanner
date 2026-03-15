@@ -1,7 +1,5 @@
 #include "icmp_header.h"
 
-#include <QDebug>
-
 #include <sys/time.h>
 
 namespace network {
@@ -66,26 +64,17 @@ uint32_t network::IcmpHeader::maxPayloadLengthBytes() const
 
 void network::IcmpHeader::debugHex() const
 {
-    qDebug().noquote() << "---ICMP-HEADER---";
-    qDebug().noquote() << " TYP  CODE   CHKS ";
-    qDebug().noquote() << "0x" + QString::number(static_cast<int>(getType()), 16).rightJustified(2, '0') +
-                          "  0x" + QString::number(getCode(), 16).rightJustified(2, '0') +
-                          "  0x" + QString::number(getChksum(), 16).rightJustified(4, '0');
-    qDebug().noquote() << " IDEN  SEQNUM ";
-    qDebug().noquote() << "0x" + QString::number(getIdentifier(), 16).rightJustified(4, '0') + " 0x" + QString::number(getSeqNumber(), 16).rightJustified(4, '0');
-    qDebug().noquote() << "-----------------";
+    printf("---ICMP-HEADER---\n");
+    printf(" TYP  CODE   CHKS \n");
+    printf("0x%02X  0x%02X  0x%04X\n", static_cast<int>(getType()), getCode(), getChksum());
+    printf(" IDEN  SEQNUM \n");
+    printf("0x%04X 0x%04X\n", getIdentifier(), getSeqNumber());
+    printf("-----------------\n");
 }
 
 void network::IcmpHeader::debugBin() const
 {
-    qDebug().noquote() << "--------------ICMP----HEADER---------------";
-    qDebug().noquote() << "    TYPE      CODE        CHECK SUMM ";
-    qDebug().noquote() << "0b" + QString::number(static_cast<int>(getType()), 2).rightJustified(8, '0') +
-                          " 0b" + QString::number(getCode(), 2).rightJustified(8, '0') +
-                          " 0b" + QString::number(getChksum(), 2).rightJustified(16, '0');
-    qDebug().noquote() << "    IDENTIFIER      SEQUENCE NUMBER ";
-    qDebug().noquote() << "0b" + QString::number(getIdentifier(), 2).rightJustified(16, '0') + " 0b" + QString::number(getSeqNumber(), 2).rightJustified(16, '0');
-    qDebug().noquote() << "-------------------------------------------";
+    std::cout << headerFormat.getBinaryVisualization(true, 1, 2, 1, 32, true) << std::endl;
 }
 
 IcmpHeader::Type IcmpHeader::getType() const

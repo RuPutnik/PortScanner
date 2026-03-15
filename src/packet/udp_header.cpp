@@ -1,7 +1,5 @@
 #include "udp_header.h"
 
-#include <QDebug>
-
 namespace network {
 
 UdpHeader::UdpHeader():
@@ -71,22 +69,17 @@ void UdpHeader::setChksum(uint16_t chksum)
 
 void UdpHeader::debugHex() const
 {
-    qDebug().noquote() << "---UDP-HEADER---";
-    qDebug().noquote() << "   SP     DP ";
-    qDebug().noquote() << "0x" + QString::number(getSrcPort(), 16).rightJustified(4, '0') + " 0x" + QString::number(getDstPort(), 16).rightJustified(4, '0');
-    qDebug().noquote() << "  LEN   CHKS ";
-    qDebug().noquote() << "0x" + QString::number(getPacketBytesLength(), 16).rightJustified(4, '0') + " 0x" + QString::number(getChksum(), 16).rightJustified(4, '0');
-    qDebug().noquote() << "----------------";
+    printf("---UDP-HEADER---\n");
+    printf("   SP     DP \n");
+    printf("0x%04X  0x%04X\n", getSrcPort(), getDstPort());
+    printf("  LEN   CHKS \n");
+    printf("0x%04X  0x%04X\n", getPacketBytesLength(), getChksum());
+    printf("----------------\n");
 }
 
 void UdpHeader::debugBin() const
 {
-    qDebug().noquote() << "---------------UDP----HEADER---------------";
-    qDebug().noquote() << "    SOURCE PORT         DEST PORT ";
-    qDebug().noquote() << "0b" + QString::number(getSrcPort(), 2).rightJustified(16, '0') + " 0b" + QString::number(getDstPort(), 2).rightJustified(16, '0');
-    qDebug().noquote() << "    LENGTH PACKET      CHECK SUMM ";
-    qDebug().noquote() << "0b" + QString::number(getPacketBytesLength(), 2).rightJustified(16, '0') + " 0b" + QString::number(getChksum(), 2).rightJustified(16, '0');
-    qDebug().noquote() << "-------------------------------------------";
+    std::cout << headerFormat.getBinaryVisualization(true, 1, 2, 1, 32, true) << std::endl;
 }
 
 std::unique_ptr<const char[]> UdpHeader::generateCompleteHeader([[maybe_unused]] const std::shared_ptr<char[]>& payload, [[maybe_unused]] uint32_t payloadLenBytes)

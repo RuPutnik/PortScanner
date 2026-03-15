@@ -18,9 +18,11 @@ public:
     void debugBin() const override;
     uint16_t getProtoId() const override;
 
+    uint8_t getTTL() const;
     uint32_t getSourceIP() const;
     uint32_t getTargetIP() const;
     uint16_t getHeaderLength() const;
+    uint16_t getPacketLength() const;
 
 private:
     bool considerPseudoHeaderCalcCksum() const override;
