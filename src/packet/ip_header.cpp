@@ -1,7 +1,5 @@
 #include "ip_header.h"
 
-#include  "../tools.h"
-
 namespace network {
 
 IpHeader::IpHeader():

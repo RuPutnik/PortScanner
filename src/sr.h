@@ -1,9 +1,6 @@
 #ifndef SR_H
 #define SR_H
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
-
 #include "packet/net_packet.h"
 
 namespace network {

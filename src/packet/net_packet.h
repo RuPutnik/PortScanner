@@ -1,11 +1,6 @@
 #ifndef NET_PACKET_H
 #define NET_PACKET_H
 
-#include <cstdint>
-#include <memory>
-
-#include <string.h>
-
 #include "i_header.h"
 
 namespace network {

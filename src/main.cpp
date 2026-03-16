@@ -1,12 +1,6 @@
 #include <QCoreApplication>
 
-#include <netinet/if_ether.h>
-#include <netinet/ip.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <unistd.h>
 #include <thread>
-#include <iostream>
 
 #include "packet/tcp_header.h"
 #include "packet/udp_header.h"

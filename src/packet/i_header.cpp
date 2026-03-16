@@ -1,8 +1,10 @@
 #include "i_header.h"
 
-#include <arpa/inet.h>
 #include <chrono>
 #include <random>
+
+#include <arpa/inet.h>
+#include <netdb.h>
 
 IHeader::IHeader(const std::string& sourceIpAddress, const std::string& destinationIpAddress, const kivk_lib::Protocol& protHeaderFormat):
     headerFormat{protHeaderFormat}

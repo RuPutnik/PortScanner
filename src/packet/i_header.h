@@ -1,13 +1,9 @@
 #ifndef I_HEADER_H
 #define I_HEADER_H
 
-#include <cstdint>
-#include <utility>
-#include <optional>
+#include <protocol.h>
 
 #include "../tools.h"
-#include <protocol.h>
-#include <netinet/ip.h>
 
 class IHeader
 {

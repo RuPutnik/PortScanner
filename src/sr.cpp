@@ -1,9 +1,8 @@
 #include "sr.h"
 
-#include <sys/socket.h>
-#include <string>
-#include <ranges>
 #include <atomic>
+
+#include <arpa/inet.h>
 
 #include "packet/icmp_header.h"
 #include "packet/tcp_header.h"
