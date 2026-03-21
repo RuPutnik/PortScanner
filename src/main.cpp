@@ -2,12 +2,11 @@
 
 #include <thread>
 
-#include "packet/tcp_header.h"
-#include "packet/udp_header.h"
-#include "packet/net_packet.h"
-#include "packet/icmp_header.h"
-
-#include "sr.h"
+#include <packet/tcp_header.h>
+#include <packet/udp_header.h>
+#include <packet/net_packet.h>
+#include <packet/icmp_header.h>
+#include <sr.h>
 
 using namespace network;
 
@@ -150,8 +149,6 @@ void fakeListener()
 int main(int argc, char** argv)
 {
     //QCoreApplication a(argc, argv);
-
-
 
 //   in_addr sourceAddress, targetAddress;
 //   if(inet_pton(AF_INET, destIP.data(), &targetAddress.s_addr) < 0){

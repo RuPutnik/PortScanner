@@ -2,9 +2,9 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Определить текущий проект
-project(PortScanner
+project(libArNet
         VERSION 1.0
-        DESCRIPTION "Сканер TCP портов"
+        DESCRIPTION "Библиотека работы с сетью"
         LANGUAGES CXX
 )
 
@@ -13,8 +13,6 @@ set(_PATH_TO_MODULES "${PROJECT_SOURCE_DIR}/modules" CACHE STRING "Путь к �
 
 # Настроить возможность подключения модулей cmake
 include(${_PATH_TO_MODULES}/origin_tlk_build/cmake/Init.cmake)
-
-add_subdirectory(libArNet)
 
 # Подключить исходники
 add_subdirectory(src)
