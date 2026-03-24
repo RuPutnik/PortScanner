@@ -82,17 +82,17 @@ void UdpHeader::debugBin() const
     std::cout << headerFormat.getBinaryVisualization(true, 1, 2, 1, 32, true) << std::endl;
 }
 
-std::unique_ptr<const char[]> UdpHeader::generateCompleteHeader([[maybe_unused]] const std::shared_ptr<char[]>& payload, [[maybe_unused]] uint32_t payloadLenBytes)
+std::unique_ptr<const unsigned char[]> UdpHeader::generateCompleteHeader([[maybe_unused]] const std::vector<unsigned char> &payload)
 {
     if(ipAdresses.has_value()){
-        headerFormat.setFieldValue("chksum", calcCheckSum(payload, payloadLenBytes));
+        headerFormat.setFieldValue("chksum", calcCheckSum(payload));
     }
 
-    char* const rawDataHeader = new char[lengthBytes()];
+    unsigned char* const rawDataHeader = new unsigned char[lengthBytes()];
 
     memcpy(rawDataHeader, headerFormat.getInternalBuffer(), lengthBytes());
 
-    return std::unique_ptr<const char[]>{rawDataHeader};
+    return std::unique_ptr<const unsigned char[]>{rawDataHeader};
 }
 
 uint16_t UdpHeader::getProtoId() const

@@ -88,16 +88,15 @@ public:
     void debugHex() const override;
     void debugBin() const override;
 
-    // Работа с опциями
-    bool addOption(Options option, const OptionValues& values = {}, bool lastOption = false);
-    bool setOptionValues(Options option, const OptionValues& values);
-
     std::string getOptionsAsText() const;
     uint32_t maxPayloadLengthBytes() const override;
     uint16_t getProtoId() const override;
     std::shared_ptr<IHeader> clone() override;
-
     uint16_t setHeaderData(const std::vector<unsigned char>& dataPacket) override;
+
+    // Работа с опциями
+    bool addOption(Options option, const OptionValues& values = {}, bool lastOption = false);
+    bool setOptionValues(Options option, const OptionValues& values);
 
 private:
     using OptionData = std::pair<int32_t, std::string>; //Размер в байтах, текстовое название
@@ -116,7 +115,7 @@ private:
 
     void setChksum(uint16_t newChksum);
 
-    std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes) override;
+    std::unique_ptr<const unsigned char[]> generateCompleteHeader(const std::vector<unsigned char>& payload) override;
 
     //Полезная нагрузка TCP пакета участвует в подсчете КС помимо полей заголовка
     bool containsOption(Options opt) const;

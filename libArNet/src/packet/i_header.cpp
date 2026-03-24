@@ -79,9 +79,9 @@ uint32_t IHeader::generateRandomNumber_() const
     return dist(engine);
 }
 
-uint16_t IHeader::calcCheckSum(const std::shared_ptr<char[]>& payloadPacket, uint32_t payloadLenBytes) const
+uint16_t IHeader::calcCheckSum(const std::vector<unsigned char>& payloadPacket) const
 {
-    const uint32_t packetTotalLenBytes = lengthBytes() + payloadLenBytes;
+    const uint32_t packetTotalLenBytes = lengthBytes() + static_cast<uint32_t>(payloadPacket.size());
 
     const uint32_t sizePseudoHeader = considerPseudoHeaderCalcCksum() ? sizeof(PseudoIpHeader) : 0;
 
@@ -97,7 +97,7 @@ uint16_t IHeader::calcCheckSum(const std::shared_ptr<char[]>& payloadPacket, uin
     memcpy(buffDataPacket.get(), &pseudoHeader, sizePseudoHeader);
     //Преобразуем к char* т.к. нам нужно сместиться на размер PseudoIpHeader в байтах
     memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizePseudoHeader, headerFormat.getInternalBuffer(), lengthBytes());
-    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizePseudoHeader + lengthBytes(), payloadPacket.get(), payloadLenBytes);
+    memcpy(reinterpret_cast<char*>(buffDataPacket.get()) + sizePseudoHeader + lengthBytes(), payloadPacket.data(), payloadPacket.size());
 
     return htons(calcCheckSum_(buffDataPacket.get(), lenBytesBuffDataPacket));
 }

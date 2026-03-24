@@ -14,7 +14,7 @@ public:
     IHeader(uint32_t sourceIpAddress, uint32_t destinationIpAddress, const kivk_lib::Protocol& protHeaderFormat);
 
     virtual uint16_t setHeaderData(const std::vector<unsigned char>& dataPacket) = 0; //Метод виртуальный, т.к. некоторые заголовки могут иметь плавающий размер
-    virtual std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes) = 0;
+    virtual std::unique_ptr<const unsigned char[]> generateCompleteHeader(const std::vector<unsigned char>& payload) = 0;
 
     uint16_t lengthBytes() const;
     virtual uint32_t maxPayloadLengthBytes() const = 0;
@@ -47,7 +47,7 @@ protected:
         return static_cast<ResType>(generateRandomNumber_());
     }
 
-    uint16_t calcCheckSum(const std::shared_ptr<char[]> &payloadPacket, uint32_t payloadLenBytes) const;
+    uint16_t calcCheckSum(const std::vector<unsigned char>& payloadPacket) const;
 
 private:
     uint32_t generateRandomNumber_() const;

@@ -25,15 +25,15 @@ uint16_t IpHeader::setHeaderData(const std::vector<unsigned char>& dataPacket)
     return lengthIpHeaderBytes;
 }
 
-std::unique_ptr<const char[]> IpHeader::generateCompleteHeader([[maybe_unused]] const std::shared_ptr<char[]>& payload, [[maybe_unused]] uint32_t payloadLenBytes)
+std::unique_ptr<const unsigned char[]> IpHeader::generateCompleteHeader([[maybe_unused]] const std::vector<unsigned char>& payload)
 {
-    headerFormat.setFieldValue("chksum", calcCheckSum(nullptr, 0));
+    headerFormat.setFieldValue("chksum", calcCheckSum({}));
 
-    char* const rawDataHeader = new char[lengthBytes()];
+    unsigned char* const rawDataHeader = new unsigned char[lengthBytes()];
 
     memcpy(rawDataHeader, headerFormat.getInternalBuffer(), lengthBytes());
 
-    return std::unique_ptr<const char[]>{rawDataHeader};
+    return std::unique_ptr<const unsigned char[]>{rawDataHeader};
 }
 
 uint32_t IpHeader::maxPayloadLengthBytes() const

@@ -30,7 +30,7 @@ public:
     IcmpHeader(const std::string& sourceIp, const std::string& destinationIp, Type type = Type::Unknown);
     IcmpHeader(uint32_t sourceIp, uint32_t destinationIp, Type type = Type::Unknown);
 
-    std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes) override;
+    std::unique_ptr<const unsigned char[]> generateCompleteHeader(const std::vector<unsigned char>& payload) override;
     uint32_t maxPayloadLengthBytes() const override;
     std::shared_ptr<IHeader> clone() override;
     void debugHex() const override;

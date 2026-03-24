@@ -11,7 +11,7 @@ public:
     IpHeader();
 
     uint16_t setHeaderData(const std::vector<unsigned char>& dataPacket) override;
-    std::unique_ptr<const char[]> generateCompleteHeader(const std::shared_ptr<char[]> &payload, uint32_t payloadLenBytes) override;
+    std::unique_ptr<const unsigned char[]> generateCompleteHeader(const std::vector<unsigned char>& payload) override;
     uint32_t maxPayloadLengthBytes() const override;
     std::shared_ptr<IHeader> clone() override;
     void debugHex() const override;

@@ -46,15 +46,15 @@ IcmpHeader::IcmpHeader(uint32_t sourceIp, uint32_t destinationIp, Type type):
     ipAdresses = {sourceIp, destinationIp};
 }
 
-std::unique_ptr<const char[]> network::IcmpHeader::generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes)
+std::unique_ptr<const unsigned char[]> network::IcmpHeader::generateCompleteHeader(const std::vector<unsigned char> &payload)
 {
-    headerFormat.setFieldValue("chksum", calcCheckSum(payload, payloadLenBytes));
+    headerFormat.setFieldValue("chksum", calcCheckSum(payload));
 
-    char* const rawDataHeader = new char[lengthBytes()];
+    unsigned char* const rawDataHeader = new unsigned char[lengthBytes()];
 
     memcpy(rawDataHeader, headerFormat.getInternalBuffer(), lengthBytes());
 
-    return std::unique_ptr<const char[]>{rawDataHeader};
+    return std::unique_ptr<const unsigned char[]>{rawDataHeader};
 }
 
 uint32_t network::IcmpHeader::maxPayloadLengthBytes() const

@@ -41,11 +41,11 @@ public:
 [[maybe_unused]] std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(int fileDescriptor, int flags = 0);
 [[maybe_unused]] std::pair<std::vector<unsigned char>, uint32_t> blockingReadPacket(const Socket& socket, int flags = 0);
 
-[[maybe_unused]] uint32_t blockingReadPackets(int fileDescriptor, const std::function<void (const std::vector<unsigned char>&)>& dataExecutor, std::atomic<bool>& conditionFinishRead, int microsecInterval = -1, int flags = 0);
-[[maybe_unused]] uint32_t blockingReadPackets(const Socket& socket, const std::function<void (const std::vector<unsigned char>&)>& dataExecutor, std::atomic<bool>& conditionFinishRead, int microsecInterval = -1, int flags = 0);
+[[maybe_unused]] uint32_t blockingReadPackets(int fileDescriptor, const std::function<void (const std::vector<unsigned char>&)>& dataExecutor, std::atomic<bool>& conditionFinishRead, __useconds_t microsecInterval = 1000, int flags = 0);
+[[maybe_unused]] uint32_t blockingReadPackets(const Socket& socket, const std::function<void (const std::vector<unsigned char>&)>& dataExecutor, std::atomic<bool>& conditionFinishRead, __useconds_t microsecInterval = 1000, int flags = 0);
 
-[[maybe_unused]] uint32_t blockingReadPackets(int fileDescriptor, IPacketHandler* packetHandler, std::atomic<bool>& conditionFinishRead, int microsecInterval = -1, int flags = 0);
-[[maybe_unused]] uint32_t blockingReadPackets(const Socket& socket, IPacketHandler* packetHandler, std::atomic<bool>& conditionFinishRead, int microsecInterval = -1, int flags = 0);
+[[maybe_unused]] uint32_t blockingReadPackets(int fileDescriptor, IPacketHandler* packetHandler, std::atomic<bool>& conditionFinishRead, __useconds_t microsecInterval = 1000, int flags = 0);
+[[maybe_unused]] uint32_t blockingReadPackets(const Socket& socket, IPacketHandler* packetHandler, std::atomic<bool>& conditionFinishRead, __useconds_t microsecInterval = 1000, int flags = 0);
 
 }
 

@@ -39,15 +39,15 @@ TcpHeader::TcpHeader(uint32_t sourceIp, uint32_t destinationIp):
     ipAdresses = {sourceIp, destinationIp};
 }
 
-std::unique_ptr<const char[]> TcpHeader::generateCompleteHeader(const std::shared_ptr<char[]>& payload, uint32_t payloadLenBytes)
+std::unique_ptr<const unsigned char[]> TcpHeader::generateCompleteHeader(const std::vector<unsigned char> &payload)
 {
-    headerFormat.setFieldValue("chksum", calcCheckSum(payload, payloadLenBytes));
+    headerFormat.setFieldValue("chksum", calcCheckSum(payload));
 
-    char* const rawDataHeader = new char[lengthBytes()];
+    unsigned char* const rawDataHeader = new unsigned char[lengthBytes()];
 
     memcpy(rawDataHeader, headerFormat.getInternalBuffer(), lengthBytes());
 
-    return std::unique_ptr<const char[]>{rawDataHeader};
+    return std::unique_ptr<const unsigned char[]>{rawDataHeader};
 }
 
 uint16_t TcpHeader::getSrcPort() const
