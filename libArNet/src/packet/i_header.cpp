@@ -16,7 +16,7 @@ IHeader::IHeader(const std::string& sourceIpAddress, const std::string& destinat
     in_addr targetAddress{0};
 
     if(!sourceIpAddress.empty()){
-        if(inet_pton(AF_INET, sourceIpAddress.data(), &targetAddress.s_addr) < 0){
+        if(inet_pton(AF_INET, sourceIpAddress.data(), &sourceAddress.s_addr) < 0){
             perror("Error format IPv4 address");
             return;
         }

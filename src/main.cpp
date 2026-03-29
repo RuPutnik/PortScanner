@@ -76,75 +76,8 @@ void rawListener()
     };
 
     std::atomic<bool> b = true;
-    [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::ICMP}, new PacketAnalyzer, b);
+    [[maybe_unused]] uint32_t errCode = network::blockingReadPackets(Socket{PACKET_TYPE::TCP}, new PacketAnalyzer, b);
 }
-/*
-void fakeListener()
-{
-    const int fdListener = socket(AF_INET, SOCK_STREAM, 0);
-    if(fdListener < 0){
-        perror("Error create stream socket");
-        return;
-    }
-
-    qDebug() << "Создание Stream Socket успешно выполнено";
-    sockaddr_in incomingAddr;
-    incomingAddr.sin_family = AF_INET;
-    incomingAddr.sin_port = htons(48000);
-    incomingAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    memset(incomingAddr.sin_zero, 0, sizeof(incomingAddr.sin_zero));
-
-    if(bind(fdListener, reinterpret_cast<sockaddr*>(&incomingAddr), sizeof(incomingAddr)) < 0)
-    {
-        perror("bind");
-        exit(errno);
-    }
-    qDebug() << "Bind Stream Socket успешно выполнено";
-    if(listen(fdListener, 1000000) < 0){
-        perror("listen");
-        exit(errno);
-    }
-    qDebug() << "Listen Stream Socket успешно выполнено";
-    socklen_t len;
-
-    while(true)
-    {
-        const int fdServer = accept(fdListener, 0, 0);
-        if(fdServer < 0)
-        {
-            perror("accept");
-            exit(errno);
-        }
-
-        qDebug() << "accepted";
-
-        while(true)
-        {
-            const auto amountBytes = recvfrom(fdListener, buff, sizeMsg, 0, reinterpret_cast<sockaddr*>(&incAddr), &len);
-            if(amountBytes <= 0){
-                qDebug() << "amountBytes = " << amountBytes;
-                break;
-            }
-
-            qDebug() << incAddr.sin_addr.s_addr << ":" << incAddr.sin_port;
-            qDebug() << "Получено байт: " << amountBytes;
-
-                for(int i = 0; i < amountBytes; i++){
-                std::cout << QString::number(buff[i], 16).toStdString();
-                std::cout.flush();
-                if(i % 4 == 0) {
-                    std::cout << "    ";
-                }
-                std::cout.flush();
-            }
-            std::cout << "\n";
-        }
-
-        usleep(10 * 1000);
-    }
-}
-*/
 
 int main(int argc, char** argv)
 {
@@ -177,7 +110,7 @@ int main(int argc, char** argv)
     tcpHeader->setSrcPort(48000);
     tcpHeader->setDstPort(80);
     tcpHeader->setFlags(TcpHeader::SYN);
-    tcpHeader->addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 1460}});
+  //  tcpHeader->addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 1460}});
     //tcpHeader->addOption(TcpHeader::Options::SACK_Permitted);
     //tcpHeader->addOption(TcpHeader::Options::Timestamps, {{TcpHeader::OptionValue::UINT32, 1000000}, {TcpHeader::OptionValue::UINT32, 0}});
     //tcpHeader->addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT8, 7}});
@@ -194,6 +127,9 @@ int main(int argc, char** argv)
     qDebug() << "FIN" << tcpHeader->isFin();
 
     network::NetPacket tcpPack{tcpHeader};
+
+    tcpPack.debugBin();
+
     std::jthread listenThread{&rawListener};
 
     std::shared_ptr<UdpHeader> udpHead = std::make_shared<UdpHeader>(sourceIP, destIP);
@@ -209,8 +145,7 @@ int main(int argc, char** argv)
 
     std::shared_ptr<IcmpHeader> icmpHeader = std::make_shared<IcmpHeader>(IcmpHeader::Type::EchoRequest);
 
-    network::NetPacket icmpPack{icmpHeader};
-    icmpPack.setPayload(std::string{"www.youtube.com"});
+    network::NetPacket icmpPack{icmpHeader, "www.youtube.com"};
 
     //icmpPack.debugBin();
 
@@ -218,16 +153,16 @@ int main(int argc, char** argv)
     qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";
     while(true) {
         sleep(3);
-       // if(!network::sendPacketTo(Socket{PACKET_TYPE::TCP}, tcpPack, destIP)){
-       //     perror("packet send error:");
-       // }
+        if(!network::sendPacketTo(Socket{PACKET_TYPE::TCP}, tcpPack, destIP)){
+            perror("packet send error:");
+        }
        // if(!network::sendPacketTo(Socket{PACKET_TYPE::UDP}, udpPack, destIP)){
        //     perror("packet send error:");
        // }
 
-        if(!network::sendPacketTo(Socket{PACKET_TYPE::ICMP}, icmpPack, destIP)){
-            perror("packet send error:");
-        }
+      //  if(!network::sendPacketTo(Socket{PACKET_TYPE::ICMP}, icmpPack, destIP)){
+      //      perror("packet send error:");
+      //  }
     }
 
 
