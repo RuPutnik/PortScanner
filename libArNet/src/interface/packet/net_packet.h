@@ -20,7 +20,7 @@ public:
     const std::vector<unsigned char>& getPayload() const;
     std::shared_ptr<const IHeader> getHeader() const;
     uint32_t getBytesLength() const;
-    std::unique_ptr<const unsigned char[]> getData();
+    std::vector<unsigned char> getData();
     int getProtoId() const;
 
     bool setData(const std::vector<unsigned char>& data);

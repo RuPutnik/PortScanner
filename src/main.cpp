@@ -127,6 +127,7 @@ int main(int argc, char** argv)
     qDebug() << "FIN" << tcpHeader->isFin();
 
     network::NetPacket tcpPack{tcpHeader};
+    const auto tcpPackData = tcpPack.getData();
 
     tcpPack.debugBin();
 
@@ -146,6 +147,7 @@ int main(int argc, char** argv)
     std::shared_ptr<IcmpHeader> icmpHeader = std::make_shared<IcmpHeader>(IcmpHeader::Type::EchoRequest);
 
     network::NetPacket icmpPack{icmpHeader, "www.youtube.com"};
+    const auto icmpPackData = icmpPack.getData();
 
     //icmpPack.debugBin();
 
@@ -153,16 +155,16 @@ int main(int argc, char** argv)
     qDebug().noquote() << "Подготовка пакета завершена, выполняем отправку...";
     while(true) {
         sleep(3);
-        if(!network::sendPacketTo(Socket{PACKET_TYPE::TCP}, tcpPack, destIP)){
+        if(!network::sendPacketTo(Socket{PACKET_TYPE::TCP}, tcpPackData, destIP)){
             perror("packet send error:");
         }
        // if(!network::sendPacketTo(Socket{PACKET_TYPE::UDP}, udpPack, destIP)){
        //     perror("packet send error:");
        // }
 
-      //  if(!network::sendPacketTo(Socket{PACKET_TYPE::ICMP}, icmpPack, destIP)){
-      //      perror("packet send error:");
-      //  }
+        //if(!network::sendPacketTo(Socket{PACKET_TYPE::ICMP}, icmpPackData, destIP)){
+        //    perror("packet send error:");
+        //}
     }
 
 

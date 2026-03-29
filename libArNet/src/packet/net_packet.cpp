@@ -31,7 +31,7 @@ uint32_t network::NetPacket::getBytesLength() const
     return header->lengthBytes() + getLengthPayload();
 }
 
-std::unique_ptr<const unsigned char[]> network::NetPacket::getData()
+std::vector<unsigned char> network::NetPacket::getData()
 {
     //Создаем массив размером в длину сегмента в байтах
     unsigned char* const tcpPacketBuffer = new unsigned char[getBytesLength()];
@@ -44,7 +44,7 @@ std::unique_ptr<const unsigned char[]> network::NetPacket::getData()
     memcpy(tcpPacketBuffer, completeHeaderData.get(), header->lengthBytes());
     memcpy(tcpPacketBuffer + header->lengthBytes(), payloadBigEndian.data(), getLengthPayload());
 
-    return std::unique_ptr<const unsigned char[]>(tcpPacketBuffer);
+    return std::vector(tcpPacketBuffer, tcpPacketBuffer + getBytesLength());
 }
 
 bool network::NetPacket::setData(const std::vector<unsigned char>& data)

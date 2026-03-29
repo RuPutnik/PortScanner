@@ -39,7 +39,7 @@ TcpHeader::TcpHeader(uint32_t sourceIp, uint32_t destinationIp):
     ipAdresses = {sourceIp, destinationIp};
 }
 
-std::unique_ptr<const unsigned char[]> TcpHeader::generateCompleteHeader(const std::vector<unsigned char> &payload)
+std::unique_ptr<const unsigned char[]> TcpHeader::generateCompleteHeader(const std::vector<unsigned char>& payload)
 {
     headerFormat.setFieldValue("chksum", calcCheckSum(payload));
 

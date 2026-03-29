@@ -151,12 +151,18 @@ std::optional<NetPacket> IPacketHandler::resolvePacket(std::vector<unsigned char
     return NetPacket{packetHeader, incomingNetData};
 }
 
-network::expected<ssize_t, uint32_t> sendPacketTo(const Socket &socket, NetPacket packet, const std::string &ipv4Address, int flags)
+network::expected<ssize_t, uint32_t> sendPacketTo(const Socket& socket, NetPacket packet, const std::string &ipv4Address, int flags)
 {
     return sendPacketTo(socket.getSocketFd(), std::move(packet), ipv4Address, flags);
 }
 
 network::expected<ssize_t, uint32_t> sendPacketTo(int fileDescriptor, NetPacket packet, const std::string &ipv4Address, int flags)
+{
+    const auto packetData = packet.getData();
+    return sendPacketTo(fileDescriptor, std::move(packetData), ipv4Address, flags);
+}
+
+network::expected<ssize_t, uint32_t> sendPacketTo(int fileDescriptor, std::vector<unsigned char> packetData, const std::string &ipv4Address, int flags)
 {
     in_addr targetAddress;
     if(inet_pton(AF_INET, ipv4Address.c_str(), &targetAddress.s_addr) < 0){
@@ -167,14 +173,18 @@ network::expected<ssize_t, uint32_t> sendPacketTo(int fileDescriptor, NetPacket 
 
     memset(addr.sin_zero, 0, sizeof(addr.sin_zero));
 
-    const auto packetData = packet.getData();
-    const ssize_t amountBytes = sendto(fileDescriptor, packetData.get(), packet.getBytesLength(), flags, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
+    const ssize_t amountBytes = sendto(fileDescriptor, packetData.data(), packetData.size(), flags, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
 
     if(amountBytes > 0){
         return network::expected(amountBytes);
     }else{
         return network::unexpected(errno);
     }
+}
+
+network::expected<ssize_t, uint32_t> sendPacketTo(const Socket& socket, std::vector<unsigned char> packetData, const std::string &ipv4Address, int flags)
+{
+    return sendPacketTo(socket.getSocketFd(), std::move(packetData), ipv4Address, flags);
 }
 
 }
