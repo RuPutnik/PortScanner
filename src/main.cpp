@@ -11,8 +11,8 @@
 using namespace network;
 
 const std::string sourceIP = network::getCurrentIpAddress();//"10.0.2.15";
-//constexpr const char* destIP = "202.181.230.36";
-const std::string destIP = network::resolveHostname("www.hiking.com.hk").front(); //http://www.hiking.com.hk
+//constexpr const char* destIP = "202.181.230.36"; //http://www.hiking.com.hk
+const std::string destIP = network::resolveHostname("www.hiking.com.hk").front();
 //constexpr const char* destIP = "185.15.59.224"; //ya.ru
 
 class PacketAnalyzer final : public IPacketHandler
@@ -107,13 +107,17 @@ int main(int argc, char** argv)
    // }
 
     std::shared_ptr<TcpHeader> tcpHeader = std::make_shared<TcpHeader>(sourceIP, destIP);
-    tcpHeader->setSrcPort(48000);
-    tcpHeader->setDstPort(80);
-    tcpHeader->setFlags(TcpHeader::SYN);
+    tcpHeader->setSrcPort(0);
+    tcpHeader->setDstPort(150);
+    tcpHeader->setSeqNumber(1);
+    tcpHeader->setWindowSize(65535);
+    tcpHeader->setUrgent(65535);
+    tcpHeader->addOption(network::TcpHeader::Options::MSS, {{network::TcpHeader::OptionValue::UINT16, 1460}});
+    tcpHeader->addOption(network::TcpHeader::Options::SACK_Permitted);
   //  tcpHeader->addOption(TcpHeader::Options::MSS, {{TcpHeader::OptionValue::UINT16, 1460}});
     //tcpHeader->addOption(TcpHeader::Options::SACK_Permitted);
     //tcpHeader->addOption(TcpHeader::Options::Timestamps, {{TcpHeader::OptionValue::UINT32, 1000000}, {TcpHeader::OptionValue::UINT32, 0}});
-    //tcpHeader->addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT8, 7}});
+    tcpHeader->addOption(TcpHeader::Options::WindowScaling, {{TcpHeader::OptionValue::UINT8, 7}});
 
     qDebug().noquote() << tcpHeader->getOptionsAsText();
     //tcpHeader->debugHex();
@@ -126,26 +130,27 @@ int main(int argc, char** argv)
     qDebug() << "SYN" << tcpHeader->isSyn();
     qDebug() << "FIN" << tcpHeader->isFin();
 
-    network::NetPacket tcpPack{tcpHeader};
+    network::NetPacket tcpPack{tcpHeader/*, "info"*/};
     const auto tcpPackData = tcpPack.getData();
 
-    tcpPack.debugBin();
+    tcpPack.debugHex();
 
     std::jthread listenThread{&rawListener};
 
     std::shared_ptr<UdpHeader> udpHead = std::make_shared<UdpHeader>(sourceIP, destIP);
     udpHead->setSrcPort(48000);
     udpHead->setDstPort(80);
-    udpHead->setPayloadBytesLength(0);
+    //udpHead->setPayloadBytesLength(0);
 
     //udpHead->debugHex();
 
-    network::NetPacket udpPack{std::move(udpHead)};
+    network::NetPacket udpPack{std::move(udpHead), "www.youtube.com"};
 
     //udpPack.debugHex();
 
-    std::shared_ptr<IcmpHeader> icmpHeader = std::make_shared<IcmpHeader>(IcmpHeader::Type::EchoRequest);
-
+    std::shared_ptr<IcmpHeader> icmpHeader = std::make_shared<IcmpHeader>(IcmpHeader::Type::RouteRedirection);
+    icmpHeader->setIdentifier(0);
+    icmpHeader->setCode(ICMP_REDIR_NETTOS);
     network::NetPacket icmpPack{icmpHeader, "www.youtube.com"};
     const auto icmpPackData = icmpPack.getData();
 
@@ -162,9 +167,9 @@ int main(int argc, char** argv)
        //     perror("packet send error:");
        // }
 
-        //if(!network::sendPacketTo(Socket{PACKET_TYPE::ICMP}, icmpPackData, destIP)){
-        //    perror("packet send error:");
-        //}
+       // if(!network::sendPacketTo(Socket{PACKET_TYPE::ICMP}, icmpPackData, destIP)){
+       //     perror("packet send error:");
+       // }
     }
 
 

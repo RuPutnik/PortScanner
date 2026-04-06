@@ -14,12 +14,18 @@ network::NetPacket::NetPacket(std::shared_ptr<IHeader> header_, const std::vecto
 
 network::NetPacket::NetPacket(const NetPacket& packet)
 {
+    if(&packet == this)
+        return;
+
     payload = packet.payload;
     header = packet.header->clone();
 }
 
 network::NetPacket& network::NetPacket::operator=(const NetPacket& packet) noexcept
 {
+    if(&packet == this)
+        return *this;
+
     payload = packet.payload;
     header = packet.header->clone();
 
@@ -115,6 +121,7 @@ void network::NetPacket::debugAsciiPayload() const
 void network::NetPacket::debugHex() const
 {
     header->debugHex();
+    printf("\n");
     debugPayload();
 }
 
