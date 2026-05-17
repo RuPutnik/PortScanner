@@ -1,4 +1,4 @@
-#include <QCoreApplication>
+#include <QApplication>
 
 #include <thread>
 
@@ -7,6 +7,8 @@
 #include <packet/net_packet.h>
 #include <packet/icmp_header.h>
 #include <sr.h>
+
+#include "scanner_window.h"
 
 using namespace network;
 
@@ -81,7 +83,11 @@ void rawListener()
 
 int main(int argc, char** argv)
 {
-    //QCoreApplication a(argc, argv);
+    QApplication a(argc, argv);
+
+    ScannerWindow win;
+
+    win.show();
 
 //   in_addr sourceAddress, targetAddress;
 //   if(inet_pton(AF_INET, destIP.data(), &targetAddress.s_addr) < 0){
@@ -105,7 +111,7 @@ int main(int argc, char** argv)
    //     perror("Error format IPv4 address");
    //     return errno;
    // }
-
+/*
     std::shared_ptr<TcpHeader> tcpHeader = std::make_shared<TcpHeader>(sourceIP, destIP);
     tcpHeader->setSrcPort(0);
     tcpHeader->setDstPort(150);
@@ -130,7 +136,7 @@ int main(int argc, char** argv)
     qDebug() << "SYN" << tcpHeader->isSyn();
     qDebug() << "FIN" << tcpHeader->isFin();
 
-    network::NetPacket tcpPack{tcpHeader/*, "info"*/};
+    network::NetPacket tcpPack{tcpHeader, "info"};
     const auto tcpPackData = tcpPack.getData();
 
     tcpPack.debugHex();
@@ -173,6 +179,9 @@ int main(int argc, char** argv)
     }
 
 
-    return 0;//a.exec();
+    return 0;
+    */
+
+    return a.exec();
 }
 

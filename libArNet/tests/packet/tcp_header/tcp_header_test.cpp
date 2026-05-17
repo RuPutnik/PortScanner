@@ -70,7 +70,7 @@ TEST_P(TcpHeaderTest, TcpHeaderDataTest){
     const auto pData = packet.getData();
     const auto expectedData = std::get<1>(GetParam());
 
-    ASSERT_EQ(pData, expectedData);
+    EXPECT_EQ(pData, expectedData);
 }
 
 
