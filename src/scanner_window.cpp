@@ -11,8 +11,11 @@
 #include <QRegularExpression>
 #include <QFileDialog>
 
+#include <arpa/inet.h>
 #include <sr.h>
 #include <tools.h>
+
+#include "task.h"
 
 ScannerWindow::ScannerWindow(QWidget *parent)
     : QMainWindow{parent},
@@ -87,6 +90,8 @@ ScannerWindow::ScannerWindow(QWidget *parent)
 
 void ScannerWindow::startScanning()
 {
+    resultScanningEdit->append("Начало процесса сканирования...");
+    const auto tasks = formTasks();
     qDebug() << "Start";
 }
 
@@ -97,6 +102,119 @@ void ScannerWindow::shooseFile()
     if(!fileAbsPath.isEmpty()){
         filePathEdit->setText(fileAbsPath);
     }
+}
+
+QVector<Task> ScannerWindow::formTasks() const
+{
+    resultScanningEdit->append("Формирование заданий...");
+    if(addressEdit->text().isEmpty() || portEdit->text().isEmpty()){
+        resultScanningEdit->append("Не задано ни одного адреса или порта");
+        return {};
+    }
+
+    QStringList addressesParts = addressEdit->text().split(",");
+
+    QVector<uint32_t> ipV4addresses;
+
+    for(const auto& currHost : addressesParts)
+    {
+        if(!currHost.contains("-"))
+        {
+            ipV4addresses.append(textAddressToInt(currHost));
+            continue;
+        }
+
+        const QStringList bordersHostInterval = currHost.split("-");
+        if(bordersHostInterval.first().startsWith("www.") || bordersHostInterval.last().startsWith("www.")){
+            resultScanningEdit->append("В диапазонах адресов запрещено указывать доменные имена");
+            continue;
+        }
+
+        uint32_t startInterval = textAddressToInt(bordersHostInterval.first()).first();
+        const uint32_t endInterval = textAddressToInt(bordersHostInterval.last()).first();
+
+        if(startInterval > endInterval){
+            resultScanningEdit->append("Начало диапазона адресов больше конца диапазона");
+            continue;
+        }
+
+        for(;startInterval <= endInterval; startInterval++){
+            ipV4addresses.append(startInterval);
+        }
+    }
+
+    const QStringList portsParts = portEdit->text().split(",");
+    QVector<uint16_t> ports;
+
+    for(const auto& currPort : portsParts)
+    {
+        if(currPort.contains("-"))
+        {
+            if(currPort.toULong() > UINT16_MAX){
+                resultScanningEdit->append("В качестве порта задано слишком большое значение");
+                continue;
+            }
+
+            ports.append(currPort.toUShort());
+            continue;
+        }
+
+        const QStringList bordersPortInterval = currPort.split("-");
+        uint16_t startInterval = bordersPortInterval.first().toUShort();
+        const uint16_t endInterval = bordersPortInterval.last().toUShort();
+
+        if(startInterval > endInterval){
+            resultScanningEdit->append("Начало диапазона портов больше конца диапазона");
+            continue;
+        }
+
+        if(endInterval > UINT16_MAX){
+            resultScanningEdit->append("В интервале портов задано слишком большое значение");
+            continue;
+        }
+
+        for(;startInterval <= endInterval; startInterval++){
+            ports.append(startInterval);
+        }
+    }
+
+    QVector<Task> tasksAnalyze;
+
+    for(const auto& currIp : ipV4addresses)
+    {
+        for(const auto& currPort : ports)
+        {
+            tasksAnalyze.append(Task{currIp, currPort, false});
+        }
+    }
+
+    return tasksAnalyze;
+}
+
+QVector<uint32_t> ScannerWindow::textAddressToInt(const QString& address) const
+{
+    QVector<uint32_t> numberAddresses;
+
+    if(address.startsWith("www."))
+    {
+        const auto textAddresses = network::resolveHostname(address.toStdString());
+        for(const auto& currTextAddress : textAddresses){
+            uint32_t currAddress = 0;
+            inet_pton(AF_INET, currTextAddress.data(), &currAddress);
+
+            numberAddresses.append(ntohl(currAddress));
+        }
+    }
+    else
+    {
+        uint32_t currAddress = 0;
+        const auto stdTextAddress = address.toStdString();
+        inet_pton(AF_INET, stdTextAddress.data(), &currAddress);
+
+        numberAddresses.append(ntohl(currAddress));
+    }
+
+    return numberAddresses;
 }
 
 void ScannerWindow::stopScanning()

@@ -10,6 +10,8 @@ class QPushButton;
 class QTextEdit;
 class QLineEdit;
 
+class Task;
+
 class ScannerWindow : public QMainWindow
 {
     Q_OBJECT
@@ -25,6 +27,9 @@ private slots:
     void shooseFile();
 
 private:
+    QVector<Task> formTasks() const;
+    QVector<uint32_t> textAddressToInt(const QString& address) const;
+
     QWidget* mainWidget;
     QVBoxLayout* mainLayout;
     QHBoxLayout* addressLayout;
