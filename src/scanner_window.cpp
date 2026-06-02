@@ -18,6 +18,7 @@
 
 #include "task.h"
 #include "sender_syn_pack.h"
+#include "scanner_logger.h"
 
 ScannerWindow::ScannerWindow(QWidget *parent)
     : QMainWindow{parent},
@@ -40,7 +41,8 @@ ScannerWindow::ScannerWindow(QWidget *parent)
     chooseFilePathButton{new QPushButton{"Выбрать файл"}},
     resultScanningEdit{new QTextEdit},
     startButton{new QPushButton{"Начать сканирование"}},
-    stopButton{new QPushButton{"Остановить"}}
+    stopButton{new QPushButton{"Остановить"}},
+    senderThread{new QThread{this}}
 {
     addressLayout->addWidget(addressLebel);
     addressLayout->addWidget(addressEdit);
@@ -92,10 +94,14 @@ ScannerWindow::ScannerWindow(QWidget *parent)
 
 void ScannerWindow::startScanning()
 {
-    resultScanningEdit->append("Начало процесса сканирования...");
+    installLogger();
+
+    ScannerLogger::logging("Начало процесса сканирования...");
     const auto tasks = formTasks();
 
-    //TODO Тут запускаем потоки...
+    senderPack = new SenderSynPack{tasks, this};
+
+    //TODO Тут настраиваем и запускаем потоки...
 }
 
 void ScannerWindow::shooseFile()
@@ -109,9 +115,9 @@ void ScannerWindow::shooseFile()
 
 QSet<Task> ScannerWindow::formTasks() const
 {
-    resultScanningEdit->append("Формирование заданий...");
+    ScannerLogger::logging("Формирование заданий...");
     if(addressEdit->text().isEmpty() || portEdit->text().isEmpty()){
-        resultScanningEdit->append("Не задано ни одного адреса или порта");
+        ScannerLogger::logging("Не задано ни одного адреса или порта");
         return {};
     }
 
@@ -129,7 +135,7 @@ QSet<Task> ScannerWindow::formTasks() const
 
         const QStringList bordersHostInterval = currHost.split("-");
         if(bordersHostInterval.first().startsWith("www.") || bordersHostInterval.last().startsWith("www.")){
-            resultScanningEdit->append("В диапазонах адресов запрещено указывать доменные имена");
+            ScannerLogger::logging("В диапазонах адресов запрещено указывать доменные имена");
             continue;
         }
 
@@ -137,7 +143,7 @@ QSet<Task> ScannerWindow::formTasks() const
         const uint32_t endInterval = textAddressToInt(bordersHostInterval.last()).first();
 
         if(startInterval > endInterval){
-            resultScanningEdit->append("Начало диапазона адресов больше конца диапазона");
+            ScannerLogger::logging("Начало диапазона адресов больше конца диапазона");
             continue;
         }
 
@@ -154,7 +160,7 @@ QSet<Task> ScannerWindow::formTasks() const
         if(currPort.contains("-"))
         {
             if(currPort.toULong() > UINT16_MAX){
-                resultScanningEdit->append("В качестве порта задано слишком большое значение");
+                ScannerLogger::logging("В качестве порта задано слишком большое значение");
                 continue;
             }
 
@@ -167,12 +173,12 @@ QSet<Task> ScannerWindow::formTasks() const
         const uint16_t endInterval = bordersPortInterval.last().toUShort();
 
         if(startInterval > endInterval){
-            resultScanningEdit->append("Начало диапазона портов больше конца диапазона");
+            ScannerLogger::logging("Начало диапазона портов больше конца диапазона");
             continue;
         }
 
-        if(endInterval > UINT16_MAX){
-            resultScanningEdit->append("В интервале портов задано слишком большое значение");
+        if(bordersPortInterval.last().toULong() > UINT16_MAX){
+            ScannerLogger::logging("В интервале портов задано слишком большое значение");
             continue;
         }
 
@@ -202,7 +208,7 @@ QVector<uint32_t> ScannerWindow::textAddressToInt(const QString& address) const
     {
         const auto textAddresses = network::resolveHostname(address.toStdString());
         if(textAddresses.empty()){
-            resultScanningEdit->append(QString{"Доменное имя %1 не удалось разрешить в IpV4 и было пропущено"}.arg(address));
+            ScannerLogger::logging(QString{"Доменное имя %1 не удалось разрешить в IpV4 и было пропущено"}.arg(address));
             return {};
         }
 
@@ -217,7 +223,7 @@ QVector<uint32_t> ScannerWindow::textAddressToInt(const QString& address) const
     {
         const uint32_t currAddress = network::textIpV4ToUint(address.toStdString());
         if(currAddress == 0){
-            resultScanningEdit->append(QString{"IpV4 адрес %1 имеет некорректный формат и будет пропущен"}.arg(address));
+            ScannerLogger::logging(QString{"IpV4 адрес %1 имеет некорректный формат и будет пропущен"}.arg(address));
             return {};
         }
 
@@ -225,6 +231,23 @@ QVector<uint32_t> ScannerWindow::textAddressToInt(const QString& address) const
     }
 
     return numberAddresses;
+}
+
+void ScannerWindow::installLogger() const
+{
+    ScannerLogger::LocationLogging location;
+
+    if(writeToWindowCBox->isChecked() && writeToFileCBox->isChecked()){
+        location = ScannerLogger::LocationLogging::BOTH;
+    }
+    else if(writeToWindowCBox->isChecked() && !writeToFileCBox->isChecked()){
+        location = ScannerLogger::LocationLogging::WINDOW;
+    }
+    else{
+        location = ScannerLogger::LocationLogging::FILE;
+    }
+
+    ScannerLogger::initLogger(location, filePathEdit->text(), resultScanningEdit);
 }
 
 void ScannerWindow::stopScanning()

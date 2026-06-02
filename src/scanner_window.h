@@ -31,6 +31,7 @@ private slots:
 private:
     QSet<Task> formTasks() const;
     QVector<uint32_t> textAddressToInt(const QString& address) const;
+    void installLogger() const;
 
     QWidget* mainWidget;
     QVBoxLayout* mainLayout;
@@ -53,6 +54,9 @@ private:
     QTextEdit* resultScanningEdit;
     QPushButton* startButton;
     QPushButton* stopButton;
+
+    QThread* senderThread;
+    SenderSynPack* senderPack;
 
 };
 
