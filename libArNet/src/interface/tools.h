@@ -34,6 +34,9 @@ template<class T>
 
 [[maybe_unused]] std::vector<std::string> resolveHostname(const std::string& hostName);
 
+/// \brief Преобразует IpV4 адрес из традиционного строкового формата в число HostEndian Order (обычно, LittleEndian)
+[[maybe_unused]] uint32_t textIpV4ToUint(const std::string& ipv4Address);
+
 class unexp_token{};
 
 template<class DataType, class ErrType = uint32_t>

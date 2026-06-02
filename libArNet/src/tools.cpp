@@ -64,7 +64,7 @@ std::string getCurrentIpAddress()
     return inet_ntoa(in_addr{currAddrDigital});
 }
 
-std::vector<std::string> resolveHostname(const std::string &hostName)
+std::vector<std::string> resolveHostname(const std::string& hostName)
 {
     const hostent* result = gethostbyname(hostName.data());
 
@@ -84,6 +84,14 @@ std::vector<std::string> resolveHostname(const std::string &hostName)
     }
 
     return addresses;
+}
+
+uint32_t textIpV4ToUint(const std::string& ipv4Address)
+{
+    uint32_t currAddress = 0;
+    inet_pton(AF_INET, ipv4Address.data(), &currAddress);
+
+    return ntohl(currAddress);
 }
 
 }

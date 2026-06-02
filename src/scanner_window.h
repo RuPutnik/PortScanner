@@ -2,6 +2,7 @@
 
 #include <QMainWindow>
 
+class QThread;
 class QLabel;
 class QCheckBox;
 class QHBoxLayout;
@@ -11,6 +12,7 @@ class QTextEdit;
 class QLineEdit;
 
 class Task;
+class SenderSynPack;
 
 class ScannerWindow : public QMainWindow
 {
@@ -27,7 +29,7 @@ private slots:
     void shooseFile();
 
 private:
-    QVector<Task> formTasks() const;
+    QSet<Task> formTasks() const;
     QVector<uint32_t> textAddressToInt(const QString& address) const;
 
     QWidget* mainWidget;

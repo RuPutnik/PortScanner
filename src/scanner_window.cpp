@@ -10,12 +10,14 @@
 #include <QRegularExpressionValidator>
 #include <QRegularExpression>
 #include <QFileDialog>
+#include <QThread>
 
 #include <arpa/inet.h>
 #include <sr.h>
 #include <tools.h>
 
 #include "task.h"
+#include "sender_syn_pack.h"
 
 ScannerWindow::ScannerWindow(QWidget *parent)
     : QMainWindow{parent},
@@ -92,7 +94,8 @@ void ScannerWindow::startScanning()
 {
     resultScanningEdit->append("Начало процесса сканирования...");
     const auto tasks = formTasks();
-    qDebug() << "Start";
+
+    //TODO Тут запускаем потоки...
 }
 
 void ScannerWindow::shooseFile()
@@ -104,7 +107,7 @@ void ScannerWindow::shooseFile()
     }
 }
 
-QVector<Task> ScannerWindow::formTasks() const
+QSet<Task> ScannerWindow::formTasks() const
 {
     resultScanningEdit->append("Формирование заданий...");
     if(addressEdit->text().isEmpty() || portEdit->text().isEmpty()){
@@ -178,13 +181,13 @@ QVector<Task> ScannerWindow::formTasks() const
         }
     }
 
-    QVector<Task> tasksAnalyze;
+    QSet<Task> tasksAnalyze;
 
     for(const auto& currIp : ipV4addresses)
     {
         for(const auto& currPort : ports)
         {
-            tasksAnalyze.append(Task{currIp, currPort, false});
+            tasksAnalyze.insert(Task{currIp, currPort, false});
         }
     }
 
@@ -198,20 +201,27 @@ QVector<uint32_t> ScannerWindow::textAddressToInt(const QString& address) const
     if(address.startsWith("www."))
     {
         const auto textAddresses = network::resolveHostname(address.toStdString());
-        for(const auto& currTextAddress : textAddresses){
-            uint32_t currAddress = 0;
-            inet_pton(AF_INET, currTextAddress.data(), &currAddress);
+        if(textAddresses.empty()){
+            resultScanningEdit->append(QString{"Доменное имя %1 не удалось разрешить в IpV4 и было пропущено"}.arg(address));
+            return {};
+        }
 
-            numberAddresses.append(ntohl(currAddress));
+        for(const auto& currTextAddress : textAddresses)
+        {
+            if(const uint32_t currAddress = network::textIpV4ToUint(currTextAddress); currAddress != 0){
+                numberAddresses.append(currAddress);
+            }
         }
     }
     else
     {
-        uint32_t currAddress = 0;
-        const auto stdTextAddress = address.toStdString();
-        inet_pton(AF_INET, stdTextAddress.data(), &currAddress);
+        const uint32_t currAddress = network::textIpV4ToUint(address.toStdString());
+        if(currAddress == 0){
+            resultScanningEdit->append(QString{"IpV4 адрес %1 имеет некорректный формат и будет пропущен"}.arg(address));
+            return {};
+        }
 
-        numberAddresses.append(ntohl(currAddress));
+        numberAddresses.append(currAddress);
     }
 
     return numberAddresses;
