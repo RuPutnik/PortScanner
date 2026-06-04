@@ -27,3 +27,7 @@ include(LibsSettingsQt)
 # Подключить необходимые библиотеки Qt
 link_qt_libraries(TARGET_NAME ${TARGET_NAME} QT_LIBS "Core" "Widgets")
 
+configure_file("${CMAKE_SOURCE_DIR}/src/scanner_settings.json"
+               "${CMAKE_BINARY_DIR}/src/scanner_settings.json"
+               COPYONLY)
+

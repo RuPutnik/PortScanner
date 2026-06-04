@@ -6,7 +6,8 @@
 #include <sr.h>
 #include <tcp_header.h>
 
-#include "settings_scanner.h"
+#include "settings_reader.h"
+#include "scanner_logger.h"
 
 SenderSynPack::SenderSynPack(const QSet<Task>& tasks_, QObject *parent)
     : QObject{parent},
@@ -15,11 +16,16 @@ SenderSynPack::SenderSynPack(const QSet<Task>& tasks_, QObject *parent)
 
 void SenderSynPack::onRunSendSyn()
 {
-    const auto settings = SettingsScanner::getSettings();
+    const auto settings = SettingsReader::getSettings();
+    if(!settings){
+        ScannerLogger::logging("Ошибка чтения настроек!");
+        return;
+    }
+
     bool hasActualTasks = false;
     const uint32_t hostIp = network::textIpV4ToUint(network::getCurrentIpAddress());
 
-    for(int i = 0; i < settings.getAmountAttempt(); i++)
+    for(int i = 0; i < settings->getAmountAttempt(); i++)
     {
         for(const auto& currTask : tasks)
         {
@@ -30,19 +36,28 @@ void SenderSynPack::onRunSendSyn()
 
             auto tcpSynHeader = std::make_shared<network::TcpHeader>(hostIp, currTask.ip);
             tcpSynHeader->setDstPort(currTask.port);
-            tcpSynHeader->setSrcPort(currTask.port);
-            tcpSynHeader->setSeqNumber(1);
-            tcpSynHeader->setWindowSize(65535);
-            tcpSynHeader->setUrgent(0);
+            if(settings->getSrcPort() == 0){
+                tcpSynHeader->setSrcPort(currTask.port);
+            }
+            else
+            {
+                tcpSynHeader->setSrcPort(settings->getSrcPort());
+            }
+            tcpSynHeader->setAckNumber(settings->getAckNumber());
+            tcpSynHeader->setWindowSize(settings->getWindowSize());
+            tcpSynHeader->setUrgent(settings->getUrgent());
             tcpSynHeader->setFlags(network::TcpHeader::SYN);
-            tcpSynHeader->addOption(network::TcpHeader::Options::MSS, {{network::TcpHeader::OptionValue::UINT16, 1460}});
-            tcpSynHeader->addOption(network::TcpHeader::Options::SACK_Permitted);
+            tcpSynHeader->addOption(network::TcpHeader::Options::MSS, {{network::TcpHeader::OptionValue::UINT16, settings->getMss()}});
+
+            if(settings->isSackPermitted()){
+                tcpSynHeader->addOption(network::TcpHeader::Options::SACK_Permitted);
+            }
 
             network::NetPacket synPacket{tcpSynHeader};
 
             //TODO Отсылаем пакет SYN
 
-            QThread::msleep(settings.getTimeIntervalSendSyn());
+            QThread::msleep(settings->getTimeIntervalSendSyn());
         }
 
         if(!hasActualTasks){
@@ -50,6 +65,6 @@ void SenderSynPack::onRunSendSyn()
         }
 
         hasActualTasks = false;
-        QThread::msleep(settings.getTimeIntervalAttempt());
+        QThread::msleep(settings->getTimeIntervalAttempt());
     }
 }

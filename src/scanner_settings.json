@@ -1,0 +1,11 @@
+{
+    "amountAttempt" : 2,
+    "timeIntervalSendSynMs" : 50,
+    "timeIntervalAttemptMs" : 5000,
+    "srcPort" : 0,
+    "ackNumber" : 1,
+    "windowSize" : 65535,
+    "urgent" : 0,
+    "mss" : 1460,
+    "sackPermitted" : true
+}
